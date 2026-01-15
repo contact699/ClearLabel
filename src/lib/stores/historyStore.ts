@@ -23,6 +23,17 @@ interface HistoryState {
   searchProducts: (query: string) => ScannedProduct[];
   getStats: () => { total: number; flaggedThisMonth: number };
   getHistorySize: () => number;
+  getWeeklyInsights: () => WeeklyInsights;
+}
+
+export interface WeeklyInsights {
+  scansThisWeek: number;
+  mostCommonCategory: ProductCategory | null;
+  safePercentage: number;
+  cautionPercentage: number;
+  warningPercentage: number;
+  topFlaggedIngredients: Array<{ name: string; count: number }>;
+  improvementFromLastWeek: number; // Percentage change in safe products
 }
 
 export const useHistoryStore = create<HistoryState>()(
@@ -118,6 +129,106 @@ export const useHistoryStore = create<HistoryState>()(
 
       getHistorySize: () => {
         return get().products.length;
+      },
+
+      getWeeklyInsights: () => {
+        const products = get().products;
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - 7);
+        const startOfLastWeek = new Date(startOfWeek);
+        startOfLastWeek.setDate(startOfWeek.getDate() - 7);
+
+        // Filter products from this week and last week
+        const thisWeekProducts = products.filter((p: ScannedProduct) => {
+          const scannedDate = new Date(p.scannedAt);
+          return scannedDate >= startOfWeek;
+        });
+
+        const lastWeekProducts = products.filter((p: ScannedProduct) => {
+          const scannedDate = new Date(p.scannedAt);
+          return scannedDate >= startOfLastWeek && scannedDate < startOfWeek;
+        });
+
+        // Calculate category counts for this week
+        const categoryCounts: Record<ProductCategory, number> = {
+          food: 0,
+          cosmetics: 0,
+          cleaning: 0,
+          petFood: 0,
+          other: 0,
+        };
+
+        thisWeekProducts.forEach((p: ScannedProduct) => {
+          categoryCounts[p.category]++;
+        });
+
+        const mostCommonCategory =
+          thisWeekProducts.length > 0
+            ? (Object.keys(categoryCounts).reduce((a, b) =>
+                categoryCounts[a as ProductCategory] > categoryCounts[b as ProductCategory] ? a : b
+              ) as ProductCategory)
+            : null;
+
+        // Calculate status percentages
+        const calculateStatus = (product: ScannedProduct): SafetyStatus => {
+          const flagCount = product.flagsTriggered.length;
+          if (product.ingredients.length === 0) return 'unknown';
+          if (flagCount === 0) return 'good';
+          if (flagCount <= 2) return 'caution';
+          return 'warning';
+        };
+
+        const statusCounts = {
+          good: 0,
+          caution: 0,
+          warning: 0,
+        };
+
+        thisWeekProducts.forEach((p: ScannedProduct) => {
+          const status = calculateStatus(p);
+          if (status !== 'unknown') {
+            statusCounts[status]++;
+          }
+        });
+
+        const totalWithStatus = statusCounts.good + statusCounts.caution + statusCounts.warning;
+        const safePercentage = totalWithStatus > 0 ? (statusCounts.good / totalWithStatus) * 100 : 0;
+        const cautionPercentage = totalWithStatus > 0 ? (statusCounts.caution / totalWithStatus) * 100 : 0;
+        const warningPercentage = totalWithStatus > 0 ? (statusCounts.warning / totalWithStatus) * 100 : 0;
+
+        // Calculate top flagged ingredients
+        const ingredientCounts: Record<string, number> = {};
+        thisWeekProducts.forEach((p: ScannedProduct) => {
+          p.flagsTriggered.forEach((flag: string) => {
+            ingredientCounts[flag] = (ingredientCounts[flag] || 0) + 1;
+          });
+        });
+
+        const topFlaggedIngredients = Object.entries(ingredientCounts)
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
+
+        // Calculate improvement from last week
+        const lastWeekSafeCount = lastWeekProducts.filter(
+          (p: ScannedProduct) => calculateStatus(p) === 'good'
+        ).length;
+        const lastWeekTotal = lastWeekProducts.filter(
+          (p: ScannedProduct) => calculateStatus(p) !== 'unknown'
+        ).length;
+        const lastWeekSafePercentage = lastWeekTotal > 0 ? (lastWeekSafeCount / lastWeekTotal) * 100 : 0;
+        const improvementFromLastWeek = safePercentage - lastWeekSafePercentage;
+
+        return {
+          scansThisWeek: thisWeekProducts.length,
+          mostCommonCategory,
+          safePercentage,
+          cautionPercentage,
+          warningPercentage,
+          topFlaggedIngredients,
+          improvementFromLastWeek,
+        };
       },
     }),
     {
