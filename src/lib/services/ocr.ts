@@ -1,7 +1,7 @@
 // OCR Service - Extract ingredients from photos using AI
 import * as FileSystem from 'expo-file-system';
 
-const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_VIBECODE_ANTHROPIC_API_KEY;
+const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
 
 export interface OCRResult {
   success: boolean;
@@ -14,7 +14,7 @@ export async function extractIngredientsFromImage(imageUri: string): Promise<OCR
   if (!ANTHROPIC_API_KEY) {
     return {
       success: false,
-      error: 'Anthropic API key not configured. Please add it in the ENV tab.',
+      error: 'Anthropic API key not configured. Please add EXPO_PUBLIC_ANTHROPIC_API_KEY to your .env file.',
     };
   }
 
@@ -36,7 +36,7 @@ export async function extractIngredientsFromImage(imageUri: string): Promise<OCR
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 1024,
         messages: [
           {

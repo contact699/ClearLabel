@@ -1,7 +1,7 @@
 // AI Explanation Service - Generate comprehensive health analysis of products
 import type { NutritionData, HealthRating } from '../types';
 
-const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_VIBECODE_ANTHROPIC_API_KEY;
+const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
 
 export interface AIExplanationResult {
   success: boolean;
@@ -39,7 +39,7 @@ export async function generateIngredientExplanation(
   if (!ANTHROPIC_API_KEY) {
     return {
       success: false,
-      error: 'Anthropic API key not configured. Please add it in the ENV tab.',
+      error: 'Anthropic API key not configured. Please add EXPO_PUBLIC_ANTHROPIC_API_KEY to your .env file.',
     };
   }
 

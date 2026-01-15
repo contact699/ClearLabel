@@ -171,20 +171,19 @@ Manages product comparison:
 ## Environment & Development
 
 <environment>
-  You are in Vibecode. The system manages git and the dev server (port 8081).
-  DO NOT: manage git, touch the dev server, or check its state.
-  The user views the app through Vibecode App.
-  The user cannot see the code or interact with the terminal. Do not tell the user to do anything with the code or terminal.
-  You can see logs in the expo.log file.
-  The Vibecode App has tabs like ENV tab, API tab, LOGS tab. You can ask the user to use these tabs to view the logs, add environment variables, or give instructions for APIs like OpenAI, Anthropic, Grok, Elevenlabs, etc. but first try to implement the functionality yourself.
-  The user is likely non-technical, communicate with them in an easy to understand manner.
-  If the user's request is vague or ambitious, scope down to specific functionality. Do everything for them.
-  For images, use URLs from unsplash.com. You can also tell the user they can use the IMAGES tab to generate and upload images.
+  Standard Expo React Native development environment.
+  Use `bun start` or `npx expo start` to run the dev server.
+  Logs appear in terminal and can be viewed in expo.log file.
 
   Environment Variables (from .env):
-  - EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY - For OCR (Vision API)
-  - EXPO_PUBLIC_VIBECODE_ANTHROPIC_API_KEY - For AI explanations
-  - These are accessed via process.env.EXPO_PUBLIC_VIBECODE_*
+  - EXPO_PUBLIC_ANTHROPIC_API_KEY - Required for AI health analysis and OCR
+  - EXPO_PUBLIC_OPENAI_API_KEY - Optional, for OpenAI-based OCR (not currently used)
+  - These are accessed via process.env.EXPO_PUBLIC_*
+
+  To set up:
+  1. Copy .env.example to .env
+  2. Add your Anthropic API key from https://console.anthropic.com/
+  3. The app will display helpful error messages if keys are missing
 </environment>
 
 <forbidden_files>
@@ -470,14 +469,39 @@ Manages product comparison:
   Add console.log statements for debugging - they appear in expo.log.
 
   For OCR testing: Use clear, well-lit photos of ingredient lists.
-  For AI testing: Ensure EXPO_PUBLIC_VIBECODE_ANTHROPIC_API_KEY is set.
+  For AI testing: Ensure EXPO_PUBLIC_ANTHROPIC_API_KEY is set in your .env file.
 </testing>
 
 ## App Store / Submission
 
 <appstore>
-  Cannot assist with App Store or Google Play submission processes (app.json, eas.json, EAS CLI commands).
-  For submission help, click "Share" on the top right corner on the Vibecode App and select "Submit to App Store".
+  Use Expo Application Services (EAS) for building and submitting:
+
+  **Setup EAS:**
+  ```bash
+  npm install -g eas-cli
+  eas login
+  eas build:configure
+  ```
+
+  **Build for iOS:**
+  ```bash
+  eas build --platform ios
+  ```
+
+  **Build Android APK (for testing):**
+  ```bash
+  eas build --platform android --profile preview
+  ```
+
+  **Build for App Stores:**
+  ```bash
+  eas build --platform all --profile production
+  eas submit --platform ios
+  eas submit --platform android
+  ```
+
+  See: https://docs.expo.dev/build/introduction/
 </appstore>
 
 ## Available Skills

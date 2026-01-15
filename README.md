@@ -1,6 +1,69 @@
-# Ingredient Decoder
+# ClearLabel (Ingredient Decoder)
 
 A beautifully designed mobile app that helps users understand what's in their food, cosmetics, and household products by scanning barcodes and highlighting ingredients that match their personal health concerns.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ or Bun
+- Expo CLI (`npm install -g expo-cli`)
+- Anthropic API key (required for AI features)
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/contact699/ClearLabel.git
+   cd ClearLabel
+   ```
+
+2. **Install dependencies**
+   ```bash
+   bun install
+   # or npm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edit `.env` and add your API keys:
+   ```
+   EXPO_PUBLIC_ANTHROPIC_API_KEY=your_anthropic_api_key_here
+   EXPO_PUBLIC_OPENAI_API_KEY=your_openai_api_key_here  # Optional
+   ```
+
+   Get your Anthropic API key at: https://console.anthropic.com/
+
+4. **Start the development server**
+   ```bash
+   bun start
+   # or npx expo start
+   ```
+
+5. **Run on device**
+   - Scan the QR code with Expo Go app (iOS/Android)
+   - Or press `i` for iOS simulator
+   - Or press `a` for Android emulator
+
+### Building for Production
+
+**iOS**
+```bash
+eas build --platform ios
+```
+
+**Android APK**
+```bash
+eas build --platform android --profile preview
+```
+
+**Android App Bundle (for Play Store)**
+```bash
+eas build --platform android --profile production
+```
 
 ## Features
 
