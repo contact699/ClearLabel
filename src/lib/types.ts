@@ -1,0 +1,182 @@
+// Types for Ingredient Decoder App
+
+export type FlagType = 'allergen' | 'additive' | 'dietary' | 'environmental' | 'custom';
+
+export interface IngredientFlag {
+  id: string;
+  type: FlagType;
+  value: string;
+  displayName: string;
+  isActive: boolean;
+}
+
+export interface NotificationPreferences {
+  enabled: boolean;
+  dailyReminder: boolean;
+  dailyReminderTime: string; // HH:mm format
+  weeklyDigest: boolean;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+  flags: IngredientFlag[];
+  hasCompletedOnboarding: boolean;
+  notificationPreferences?: NotificationPreferences;
+}
+
+export type ProductCategory = 'food' | 'cosmetics' | 'cleaning' | 'petFood' | 'other';
+
+export type VeganStatus = 'vegan' | 'nonVegan' | 'maybeVegan' | 'unknown';
+export type VegetarianStatus = 'vegetarian' | 'nonVegetarian' | 'maybeVegetarian' | 'unknown';
+
+export type DataSource = 'openFoodFacts' | 'openBeautyFacts' | 'openPetFoodFacts' | 'manual';
+
+export interface ParsedIngredient {
+  name: string;
+  normalizedName?: string;
+  percent?: number;
+  isFlagged: boolean;
+  flagReasons: string[];
+}
+
+export interface ScannedProduct {
+  id: string;
+  barcode?: string;
+  name: string;
+  brand?: string;
+  category: ProductCategory;
+  ingredients: ParsedIngredient[];
+  rawIngredients?: string;
+  additives: string[];
+  allergens: string[];
+  novaScore?: number;
+  nutriscoreGrade?: string;
+  veganStatus: VeganStatus;
+  vegetarianStatus: VegetarianStatus;
+  imageURL?: string;
+  source: DataSource;
+  scannedAt: Date;
+  aiSummary?: string;
+  flagsTriggered: string[];
+  quantity?: string;
+  nutritionData?: NutritionData;
+  healthRating?: HealthRating;
+}
+
+export type SafetyStatus = 'good' | 'caution' | 'warning' | 'unknown';
+
+export interface ScanResult {
+  product: ScannedProduct;
+  overallStatus: SafetyStatus;
+  flaggedCount: number;
+  totalIngredients: number;
+}
+
+// API Response Types
+export interface OFFResponse {
+  status: number;
+  status_verbose?: string;
+  product?: OFFProduct;
+}
+
+export interface OFFProduct {
+  code?: string;
+  product_name?: string;
+  product_name_en?: string;
+  brands?: string;
+  ingredients_text?: string;
+  ingredients_text_en?: string;
+  allergens?: string;
+  allergens_from_ingredients?: string;
+  additives_tags?: string[];
+  nova_group?: number;
+  nutriscore_grade?: string;
+  nutriscore_score?: number;
+  nutrition_grades?: string;
+  ingredients_analysis_tags?: string[];
+  image_url?: string;
+  image_front_url?: string;
+  categories?: string;
+  quantity?: string;
+  nutriments?: {
+    sugars_100g?: number;
+    fat_100g?: number;
+    'saturated-fat_100g'?: number;
+    salt_100g?: number;
+    sodium_100g?: number;
+    fiber_100g?: number;
+    proteins_100g?: number;
+    energy_100g?: number;
+    'energy-kcal_100g'?: number;
+  };
+}
+
+export interface NutritionData {
+  sugars?: number;
+  fat?: number;
+  saturatedFat?: number;
+  salt?: number;
+  fiber?: number;
+  protein?: number;
+  calories?: number;
+}
+
+export type HealthRating = 'healthy' | 'moderate' | 'unhealthy' | 'unknown';
+
+// Predefined Flags Data
+export const PREDEFINED_FLAGS = {
+  allergens: [
+    { value: 'gluten', display: 'Gluten' },
+    { value: 'dairy', display: 'Dairy' },
+    { value: 'nuts', display: 'Tree Nuts' },
+    { value: 'peanuts', display: 'Peanuts' },
+    { value: 'soy', display: 'Soy' },
+    { value: 'eggs', display: 'Eggs' },
+    { value: 'shellfish', display: 'Shellfish' },
+    { value: 'fish', display: 'Fish' },
+    { value: 'sesame', display: 'Sesame' },
+  ],
+  additives: [
+    { value: 'parabens', display: 'Parabens' },
+    { value: 'sulfates', display: 'Sulfates (SLS/SLES)' },
+    { value: 'phthalates', display: 'Phthalates' },
+    { value: 'formaldehyde', display: 'Formaldehyde' },
+    { value: 'artificial_colors', display: 'Artificial Colors' },
+    { value: 'artificial_sweeteners', display: 'Artificial Sweeteners' },
+    { value: 'msg', display: 'MSG' },
+    { value: 'nitrates', display: 'Nitrates/Nitrites' },
+    { value: 'bha_bht', display: 'BHA/BHT' },
+    { value: 'carrageenan', display: 'Carrageenan' },
+  ],
+  dietary: [
+    { value: 'vegan', display: 'Not Vegan' },
+    { value: 'vegetarian', display: 'Not Vegetarian' },
+    { value: 'halal', display: 'Not Halal' },
+    { value: 'kosher', display: 'Not Kosher' },
+  ],
+  environmental: [
+    { value: 'palm_oil', display: 'Palm Oil' },
+    { value: 'microplastics', display: 'Microplastics' },
+    { value: 'triclosan', display: 'Triclosan' },
+  ],
+} as const;
+
+// Category Icons
+export const CATEGORY_ICONS: Record<ProductCategory, string> = {
+  food: 'Utensils',
+  cosmetics: 'Sparkles',
+  cleaning: 'Droplets',
+  petFood: 'PawPrint',
+  other: 'Package',
+};
+
+export const CATEGORY_LABELS: Record<ProductCategory, string> = {
+  food: 'Food',
+  cosmetics: 'Cosmetics',
+  cleaning: 'Cleaning',
+  petFood: 'Pet Food',
+  other: 'Other',
+};
