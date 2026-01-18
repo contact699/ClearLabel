@@ -133,6 +133,7 @@ export const API_URLS = {
   openFoodFacts: 'https://world.openfoodfacts.org/api/v2',
   openBeautyFacts: 'https://world.openbeautyfacts.org/api/v2',
   openPetFoodFacts: 'https://world.openpetfoodfacts.org/api/v2',
+  openProductsFacts: 'https://world.openproductsfacts.org/api/v2',
 } as const;
 
 // Ingredient Education Data

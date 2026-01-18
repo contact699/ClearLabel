@@ -22,6 +22,10 @@ export async function fetchProductByBarcode(barcode: string): Promise<FetchResul
   const petFoodResult = await fetchFromDatabase(barcode, API_URLS.openPetFoodFacts, 'openPetFoodFacts');
   if (petFoodResult) return petFoodResult;
 
+  // Try general products database (cleaning, household, etc.)
+  const productsResult = await fetchFromDatabase(barcode, API_URLS.openProductsFacts, 'openProductsFacts');
+  if (productsResult) return productsResult;
+
   return null;
 }
 

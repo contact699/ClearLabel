@@ -319,6 +319,7 @@ export default function ScanScreen() {
         let category: ProductCategory = 'food';
         if (source === 'openBeautyFacts') category = 'cosmetics';
         else if (source === 'openPetFoodFacts') category = 'petFood';
+        else if (source === 'openProductsFacts') category = 'cleaning';
 
         const scannedProduct: ScannedProduct = {
           id: uuidv4(),

@@ -56,7 +56,7 @@ export type ProductCategory = 'food' | 'cosmetics' | 'cleaning' | 'petFood' | 'o
 export type VeganStatus = 'vegan' | 'nonVegan' | 'maybeVegan' | 'unknown';
 export type VegetarianStatus = 'vegetarian' | 'nonVegetarian' | 'maybeVegetarian' | 'unknown';
 
-export type DataSource = 'openFoodFacts' | 'openBeautyFacts' | 'openPetFoodFacts' | 'manual';
+export type DataSource = 'openFoodFacts' | 'openBeautyFacts' | 'openPetFoodFacts' | 'openProductsFacts' | 'manual';
 
 export interface ParsedIngredient {
   name: string;
