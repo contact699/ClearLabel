@@ -17,6 +17,7 @@ A prioritized list of feature ideas for future development.
 - [x] **Family Profiles** - Multiple dietary profiles with different flags/restrictions, quick switch on scan screen, color-coded indicators.
 - [x] **Favorites & Shopping List** - Add products to grocery list from result screen, share lists with family via code, multiple lists support.
 - [x] **Scan History Insights/Analytics** - Weekly/monthly health score trends, health breakdown charts, top flagged ingredients, category breakdown, personalized improvement tips.
+- [x] **Ingredient Encyclopedia** - Browse/search all ingredients, detailed info with what it is, why flagged, who should avoid, alternatives, tap from result screen or home.
 
 ---
 
@@ -48,14 +49,6 @@ A prioritized list of feature ideas for future development.
 - [ ] Instagram-style story format
 - [ ] "I found a healthier alternative!" share template
 - [ ] Share comparison results
-
-### 9. Ingredient Encyclopedia
-- [ ] Tap any ingredient to learn more
-- [ ] What it is in simple terms
-- [ ] Where it comes from
-- [ ] Why it might be flagged
-- [ ] Scientific sources and references
-- [ ] Search/browse all ingredients
 
 ### 10. Voice Feedback
 - [ ] "This product contains 3 ingredients you're avoiding"

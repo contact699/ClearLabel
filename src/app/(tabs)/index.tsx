@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ScanBarcode, TrendingUp, AlertTriangle, Lightbulb, ChevronRight, Sparkles, CheckCircle, XCircle, ShoppingCart, BarChart3 } from 'lucide-react-native';
+import { ScanBarcode, TrendingUp, AlertTriangle, Lightbulb, ChevronRight, Sparkles, CheckCircle, XCircle, ShoppingCart, BarChart3, BookOpen } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -253,7 +253,7 @@ export default function HomeScreen() {
             </View>
           </Animated.View>
 
-          {/* Quick Access Cards */}
+          {/* Quick Access Cards Row 1 */}
           <Animated.View entering={FadeInDown.delay(175).springify()} className="px-6 mt-4 flex-row gap-3">
             {/* Shopping List */}
             <Pressable
@@ -290,6 +290,25 @@ export default function HomeScreen() {
               </Text>
               <Text className="text-slate-500 text-xs mt-0.5">
                 View trends
+              </Text>
+            </Pressable>
+
+            {/* Encyclopedia */}
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push('/encyclopedia');
+              }}
+              className="flex-1 bg-teal-50 rounded-2xl p-4 border border-teal-100 active:scale-[0.98]"
+            >
+              <View className="w-10 h-10 rounded-xl bg-teal-100 items-center justify-center">
+                <BookOpen size={20} color="#0D9488" />
+              </View>
+              <Text className="text-slate-900 font-bold text-sm mt-3">
+                Learn
+              </Text>
+              <Text className="text-slate-500 text-xs mt-0.5">
+                Ingredients
               </Text>
             </Pressable>
           </Animated.View>

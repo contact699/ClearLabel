@@ -32,6 +32,7 @@ function RootLayoutNav({ colorScheme }: { colorScheme: 'light' | 'dark' | null |
         <Stack.Screen name="compare" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="shopping-list" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="insights" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="encyclopedia" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
       </Stack>
