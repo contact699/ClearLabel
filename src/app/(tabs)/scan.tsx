@@ -25,12 +25,14 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { v4 as uuidv4 } from 'uuid';
-import { useUserStore, useHistoryStore } from '@/lib/stores';
+import { useUserStore, useHistoryStore, useFamilyProfilesStore } from '@/lib/stores';
 import { fetchProductByBarcode, getDisplayName, getIngredientsText, getVeganStatus, getVegetarianStatus, getCleanedAllergens, getCleanedAdditives, getNutriscoreGrade, getNutritionData, calculateHealthRating } from '@/lib/services/openFoodFacts';
 import { analyzeProduct } from '@/lib/services/ingredientMatcher';
 import { extractIngredientsFromImage } from '@/lib/services/ocr';
 import { COLORS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
+import { ProfileSwitcher } from '@/components/ProfileSwitcher';
+import { validateBarcode } from '@/lib/utils/validation';
 import type { ScannedProduct, ProductCategory, DataSource } from '@/lib/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -291,7 +293,10 @@ export default function ScanScreen() {
         }
 
         const { product: offProduct, source } = result;
-        const activeFlags = useUserStore.getState().getActiveFlags();
+        // Use family profile flags if available, otherwise fall back to user flags
+        const familyFlags = useFamilyProfilesStore.getState().getActiveFlags();
+        const userFlags = useUserStore.getState().getActiveFlags();
+        const activeFlags = familyFlags.length > 0 ? familyFlags : userFlags;
 
         const ingredientsText = getIngredientsText(offProduct) || '';
         const veganStatus = getVeganStatus(offProduct);
@@ -431,7 +436,10 @@ export default function ScanScreen() {
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    const activeFlags = useUserStore.getState().getActiveFlags();
+    // Use family profile flags if available, otherwise fall back to user flags
+    const familyFlags = useFamilyProfilesStore.getState().getActiveFlags();
+    const userFlags = useUserStore.getState().getActiveFlags();
+    const activeFlags = familyFlags.length > 0 ? familyFlags : userFlags;
     const analysisResult = analyzeProduct(
       extractedIngredients,
       [],
@@ -586,6 +594,11 @@ export default function ScanScreen() {
                 <X size={24} color="#FFFFFF" />
               </BlurView>
             </Pressable>
+
+            {/* Profile Switcher - only show if profiles exist */}
+            <ProfileSwitcher compact onProfileChange={() => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }} />
 
             <Pressable
               onPress={() => {

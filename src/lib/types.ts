@@ -17,6 +17,30 @@ export interface NotificationPreferences {
   weeklyDigest: boolean;
 }
 
+// Profile colors for family members
+export const PROFILE_COLORS = [
+  { id: 'blue', name: 'Blue', color: '#3B82F6', lightColor: '#DBEAFE' },
+  { id: 'purple', name: 'Purple', color: '#8B5CF6', lightColor: '#EDE9FE' },
+  { id: 'pink', name: 'Pink', color: '#EC4899', lightColor: '#FCE7F3' },
+  { id: 'green', name: 'Green', color: '#10B981', lightColor: '#D1FAE5' },
+  { id: 'orange', name: 'Orange', color: '#F59E0B', lightColor: '#FEF3C7' },
+  { id: 'red', name: 'Red', color: '#EF4444', lightColor: '#FEE2E2' },
+  { id: 'teal', name: 'Teal', color: '#14B8A6', lightColor: '#CCFBF1' },
+  { id: 'indigo', name: 'Indigo', color: '#6366F1', lightColor: '#E0E7FF' },
+] as const;
+
+export type ProfileColorId = typeof PROFILE_COLORS[number]['id'];
+
+export interface FamilyProfile {
+  id: string;
+  name: string;
+  colorId: ProfileColorId;
+  emoji?: string; // Optional emoji avatar
+  flags: IngredientFlag[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface UserProfile {
   id: string;
   name: string;

@@ -28,15 +28,18 @@ import {
   Clock,
   Settings,
   Check,
+  Users,
+  Copy,
+  Edit3,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, SlideInRight } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
-import { useUserStore, useSubscriptionStore, useHistoryStore } from '@/lib/stores';
+import { useUserStore, useSubscriptionStore, useHistoryStore, useFamilyProfilesStore, getSuggestedProfileColor, PROFILE_EMOJIS } from '@/lib/stores';
 import { COLORS } from '@/lib/constants';
-import { PREDEFINED_FLAGS } from '@/lib/types';
+import { PREDEFINED_FLAGS, PROFILE_COLORS } from '@/lib/types';
 import { cn } from '@/lib/cn';
-import type { FlagType, IngredientFlag, NotificationPreferences } from '@/lib/types';
+import type { FlagType, IngredientFlag, NotificationPreferences, FamilyProfile, ProfileColorId } from '@/lib/types';
 
 const FLAG_SECTIONS: { type: FlagType; title: string; icon: React.ReactNode; color: string; bgColor: string }[] = [
   { type: 'allergen', title: 'Allergens', icon: <AlertCircle size={18} color={COLORS.alertRed} />, color: COLORS.alertRed, bgColor: COLORS.alertRedLight },
@@ -99,6 +102,11 @@ export default function ProfileScreen() {
   const FREE_SCAN_LIMIT = 10;
   const remainingScans = Math.max(0, FREE_SCAN_LIMIT - scansThisMonth);
 
+  // Family profiles state
+  const familyProfiles = useFamilyProfilesStore((s) => s.profiles);
+  const activeProfileId = useFamilyProfilesStore((s) => s.activeProfileId);
+  const getProfileColor = useFamilyProfilesStore((s) => s.getProfileColor);
+
   const [showNameModal, setShowNameModal] = useState(false);
   const [editName, setEditName] = useState(profile?.name || '');
   const [showCustomFlagModal, setShowCustomFlagModal] = useState(false);
@@ -112,6 +120,13 @@ export default function ProfileScreen() {
     weeklyDigest: false,
   });
 
+  // Family profile modal state
+  const [showFamilyProfileModal, setShowFamilyProfileModal] = useState(false);
+  const [editingProfile, setEditingProfile] = useState<FamilyProfile | null>(null);
+  const [newProfileName, setNewProfileName] = useState('');
+  const [newProfileColorId, setNewProfileColorId] = useState<ProfileColorId>('blue');
+  const [newProfileEmoji, setNewProfileEmoji] = useState<string | undefined>(undefined);
+
   useEffect(() => {
     if (!profile) {
       useUserStore.getState().initializeProfile();
@@ -122,6 +137,65 @@ export default function ProfileScreen() {
     const prefs = useUserStore.getState().getNotificationPreferences();
     setNotificationPrefs(prefs);
   }, []);
+
+  // Set suggested color when opening new profile modal
+  const openNewProfileModal = () => {
+    const suggestedColor = getSuggestedProfileColor(familyProfiles);
+    setNewProfileName('');
+    setNewProfileColorId(suggestedColor);
+    setNewProfileEmoji(undefined);
+    setEditingProfile(null);
+    setShowFamilyProfileModal(true);
+  };
+
+  const openEditProfileModal = (familyProfile: FamilyProfile) => {
+    setNewProfileName(familyProfile.name);
+    setNewProfileColorId(familyProfile.colorId);
+    setNewProfileEmoji(familyProfile.emoji);
+    setEditingProfile(familyProfile);
+    setShowFamilyProfileModal(true);
+  };
+
+  const handleSaveFamilyProfile = () => {
+    if (!newProfileName.trim()) return;
+    
+    if (editingProfile) {
+      // Update existing profile
+      useFamilyProfilesStore.getState().updateProfile(editingProfile.id, {
+        name: newProfileName.trim(),
+        colorId: newProfileColorId,
+        emoji: newProfileEmoji,
+      });
+    } else {
+      // Create new profile
+      useFamilyProfilesStore.getState().createProfile(
+        newProfileName.trim(),
+        newProfileColorId,
+        newProfileEmoji
+      );
+    }
+    
+    setShowFamilyProfileModal(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleDeleteFamilyProfile = (familyProfile: FamilyProfile) => {
+    Alert.alert(
+      'Delete Profile',
+      `Delete "${familyProfile.name}"? Their dietary preferences will be lost.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            useFamilyProfilesStore.getState().deleteProfile(familyProfile.id);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]
+    );
+  };
 
   const isFlagActive = (type: FlagType, value: string) => {
     if (!profile?.flags) return false;
@@ -390,6 +464,117 @@ export default function ProfileScreen() {
               </Pressable>
             </Animated.View>
           )}
+
+          {/* Family Profiles Section */}
+          <View className="px-6 mt-8">
+            <View className="flex-row items-center justify-between mb-4">
+              <View className="flex-row items-center">
+                <Users size={20} color={COLORS.brandGreen} />
+                <Text className="text-lg font-bold text-slate-900 ml-2">Family Profiles</Text>
+              </View>
+              {useFamilyProfilesStore.getState().canCreateMore() && (
+                <Pressable
+                  onPress={openNewProfileModal}
+                  className="flex-row items-center bg-teal-50 rounded-xl px-3 py-2"
+                >
+                  <Plus size={16} color={COLORS.brandGreen} />
+                  <Text className="text-teal-600 font-semibold ml-1 text-sm">Add</Text>
+                </Pressable>
+              )}
+            </View>
+
+            {familyProfiles.length === 0 ? (
+              <Animated.View entering={FadeInDown.delay(130).springify()}>
+                <Pressable
+                  onPress={openNewProfileModal}
+                  className="bg-white rounded-2xl p-6 border border-dashed border-slate-200 items-center"
+                >
+                  <View className="w-14 h-14 rounded-full bg-teal-50 items-center justify-center mb-3">
+                    <Users size={28} color={COLORS.brandGreen} />
+                  </View>
+                  <Text className="text-base font-semibold text-slate-900 text-center">
+                    Create Family Profiles
+                  </Text>
+                  <Text className="text-sm text-slate-500 text-center mt-1">
+                    Set up different dietary preferences for each family member
+                  </Text>
+                </Pressable>
+              </Animated.View>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingRight: 16 }}
+              >
+                {familyProfiles.map((familyProfile, index) => {
+                  const colors = getProfileColor(familyProfile.id);
+                  const isActive = familyProfile.id === activeProfileId;
+
+                  return (
+                    <Animated.View
+                      key={familyProfile.id}
+                      entering={FadeInDown.delay(130 + index * 50).springify()}
+                    >
+                      <Pressable
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          useFamilyProfilesStore.getState().setActiveProfile(familyProfile.id);
+                        }}
+                        onLongPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                          openEditProfileModal(familyProfile);
+                        }}
+                        className="mr-3 p-4 rounded-2xl items-center"
+                        style={{
+                          backgroundColor: isActive ? colors.lightColor : '#FFFFFF',
+                          borderWidth: isActive ? 2 : 1,
+                          borderColor: isActive ? colors.color : '#E2E8F0',
+                          minWidth: 100,
+                        }}
+                      >
+                        {familyProfile.emoji ? (
+                          <Text className="text-3xl mb-2">{familyProfile.emoji}</Text>
+                        ) : (
+                          <View
+                            className="w-12 h-12 rounded-full mb-2 items-center justify-center"
+                            style={{ backgroundColor: colors.color }}
+                          >
+                            <Text className="text-white text-lg font-bold">
+                              {familyProfile.name.charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                        <Text
+                          className="text-sm font-semibold text-center"
+                          style={{ color: isActive ? colors.color : '#1E293B' }}
+                          numberOfLines={1}
+                        >
+                          {familyProfile.name}
+                        </Text>
+                        <Text className="text-xs text-slate-500 mt-0.5">
+                          {familyProfile.flags.length} flags
+                        </Text>
+                        {isActive && (
+                          <View
+                            className="absolute top-2 right-2 w-5 h-5 rounded-full items-center justify-center"
+                            style={{ backgroundColor: colors.color }}
+                          >
+                            <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                          </View>
+                        )}
+                      </Pressable>
+                    </Animated.View>
+                  );
+                })}
+              </ScrollView>
+            )}
+
+            {familyProfiles.length > 0 && (
+              <Text className="text-xs text-slate-400 text-center mt-3">
+                Tap to switch • Long press to edit
+              </Text>
+            )}
+          </View>
 
           {/* My Flags Section */}
           <View className="px-6 mt-8">
@@ -673,6 +858,123 @@ export default function ProfileScreen() {
               )}
             </View>
           </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Family Profile Edit/Create Modal */}
+      <Modal visible={showFamilyProfileModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowFamilyProfileModal(false)}>
+        <SafeAreaView className="flex-1 bg-slate-50">
+          <View className="flex-row items-center justify-between px-6 py-4 border-b border-slate-200">
+            <Text className="text-lg font-bold text-slate-900">
+              {editingProfile ? 'Edit Profile' : 'New Family Profile'}
+            </Text>
+            <Pressable onPress={() => setShowFamilyProfileModal(false)} className="p-2 bg-slate-100 rounded-full">
+              <X size={20} color={COLORS.textSecondary} />
+            </Pressable>
+          </View>
+          <ScrollView className="flex-1 px-6 pt-6">
+            {/* Name Input */}
+            <Text className="text-sm font-medium text-slate-700 mb-2">Name</Text>
+            <TextInput
+              value={newProfileName}
+              onChangeText={setNewProfileName}
+              placeholder="e.g. Kids, Spouse, Me"
+              placeholderTextColor={COLORS.textMuted}
+              autoFocus
+              className="bg-white rounded-2xl px-4 py-4 text-lg text-slate-900 border border-slate-200 mb-6"
+            />
+
+            {/* Emoji Picker */}
+            <Text className="text-sm font-medium text-slate-700 mb-2">Avatar (optional)</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6">
+              <Pressable
+                onPress={() => setNewProfileEmoji(undefined)}
+                className={cn(
+                  'w-12 h-12 rounded-xl items-center justify-center mr-2',
+                  !newProfileEmoji ? 'bg-teal-100 border-2 border-teal-500' : 'bg-slate-100'
+                )}
+              >
+                <User size={24} color={!newProfileEmoji ? COLORS.brandGreen : '#94A3B8'} />
+              </Pressable>
+              {PROFILE_EMOJIS.map((emoji) => (
+                <Pressable
+                  key={emoji}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setNewProfileEmoji(emoji);
+                  }}
+                  className={cn(
+                    'w-12 h-12 rounded-xl items-center justify-center mr-2',
+                    newProfileEmoji === emoji ? 'bg-teal-100 border-2 border-teal-500' : 'bg-slate-100'
+                  )}
+                >
+                  <Text className="text-2xl">{emoji}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            {/* Color Picker */}
+            <Text className="text-sm font-medium text-slate-700 mb-2">Color</Text>
+            <View className="flex-row flex-wrap mb-6">
+              {PROFILE_COLORS.map((colorOption) => (
+                <Pressable
+                  key={colorOption.id}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setNewProfileColorId(colorOption.id);
+                  }}
+                  className="mr-3 mb-3"
+                >
+                  <View
+                    className={cn(
+                      'w-12 h-12 rounded-full items-center justify-center',
+                      newProfileColorId === colorOption.id ? 'border-2' : ''
+                    )}
+                    style={{
+                      backgroundColor: colorOption.color,
+                      borderColor: newProfileColorId === colorOption.id ? '#1E293B' : 'transparent',
+                    }}
+                  >
+                    {newProfileColorId === colorOption.id && (
+                      <Check size={20} color="#FFFFFF" strokeWidth={3} />
+                    )}
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Delete Button (only for editing) */}
+            {editingProfile && (
+              <Pressable
+                onPress={() => {
+                  setShowFamilyProfileModal(false);
+                  handleDeleteFamilyProfile(editingProfile);
+                }}
+                className="flex-row items-center justify-center py-4 mt-4"
+              >
+                <Trash2 size={18} color={COLORS.alertRed} />
+                <Text className="text-red-500 font-semibold ml-2">Delete Profile</Text>
+              </Pressable>
+            )}
+          </ScrollView>
+
+          {/* Save Button */}
+          <View className="px-6 pb-6">
+            <Pressable
+              onPress={handleSaveFamilyProfile}
+              disabled={!newProfileName.trim()}
+              className="overflow-hidden rounded-2xl"
+            >
+              <LinearGradient
+                colors={newProfileName.trim() ? [COLORS.brandGreen, COLORS.gradientEnd] : ['#E2E8F0', '#E2E8F0']}
+                style={{ padding: 16, borderRadius: 16, alignItems: 'center' }}
+              >
+                <Text className={newProfileName.trim() ? 'text-white font-semibold text-lg' : 'text-slate-400 font-semibold text-lg'}>
+                  {editingProfile ? 'Save Changes' : 'Create Profile'}
+                </Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
         </SafeAreaView>
       </Modal>
     </View>

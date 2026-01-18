@@ -14,6 +14,7 @@ A prioritized list of feature ideas for future development.
 - [x] **Barcode Validation** - Validate EAN-13, UPC-A barcodes with checksum verification before API calls.
 - [x] **Date Serialization Fix** - Proper Date object rehydration from AsyncStorage JSON strings.
 - [x] **ErrorBoundary Integration** - App wrapped with error boundary for crash recovery.
+- [x] **Family Profiles** - Multiple dietary profiles with different flags/restrictions, quick switch on scan screen, color-coded indicators.
 
 ---
 
@@ -25,13 +26,7 @@ A prioritized list of feature ideas for future development.
 - [ ] Share lists with family members
 - [ ] Export list as text/image
 
-### 3. Family Profiles
-- [ ] Multiple dietary profiles (e.g., "Me", "Kids", "Spouse")
-- [ ] Each profile has different flags/restrictions
-- [ ] Quick switch between profiles when scanning
-- [ ] Color-coded profile indicators
-
-### 4. Product Recall Alerts
+### 3. Product Recall Alerts
 - [ ] Push notifications when a previously scanned product is recalled
 - [ ] FDA/USDA recall API integration
 - [ ] History scan to check for recalled products
