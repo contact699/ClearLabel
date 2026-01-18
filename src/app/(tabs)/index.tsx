@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ScanBarcode, TrendingUp, AlertTriangle, Lightbulb, ChevronRight, Sparkles, CheckCircle, XCircle, ShoppingCart } from 'lucide-react-native';
+import { ScanBarcode, TrendingUp, AlertTriangle, Lightbulb, ChevronRight, Sparkles, CheckCircle, XCircle, ShoppingCart, BarChart3 } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -253,28 +253,44 @@ export default function HomeScreen() {
             </View>
           </Animated.View>
 
-          {/* Shopping List Quick Access */}
-          <Animated.View entering={FadeInDown.delay(175).springify()} className="px-6 mt-4">
+          {/* Quick Access Cards */}
+          <Animated.View entering={FadeInDown.delay(175).springify()} className="px-6 mt-4 flex-row gap-3">
+            {/* Shopping List */}
             <Pressable
               onPress={() => {
                 Haptics.selectionAsync();
                 router.push('/shopping-list');
               }}
-              className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-4 flex-row items-center border border-orange-100 active:scale-[0.98]"
-              style={{ backgroundColor: '#FFF7ED' }}
+              className="flex-1 bg-orange-50 rounded-2xl p-4 border border-orange-100 active:scale-[0.98]"
             >
-              <View className="w-12 h-12 rounded-xl bg-orange-100 items-center justify-center">
-                <ShoppingCart size={24} color="#EA580C" />
+              <View className="w-10 h-10 rounded-xl bg-orange-100 items-center justify-center">
+                <ShoppingCart size={20} color="#EA580C" />
               </View>
-              <View className="flex-1 ml-4">
-                <Text className="text-slate-900 font-bold text-base">
-                  {activeList?.name || 'Grocery List'}
-                </Text>
-                <Text className="text-slate-500 text-sm mt-0.5">
-                  {uncheckedCount > 0 ? `${uncheckedCount} items to buy` : 'Your shopping list'}
-                </Text>
+              <Text className="text-slate-900 font-bold text-sm mt-3" numberOfLines={1}>
+                {activeList?.name || 'Grocery List'}
+              </Text>
+              <Text className="text-slate-500 text-xs mt-0.5">
+                {uncheckedCount > 0 ? `${uncheckedCount} items` : 'Your list'}
+              </Text>
+            </Pressable>
+
+            {/* Insights */}
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push('/insights');
+              }}
+              className="flex-1 bg-purple-50 rounded-2xl p-4 border border-purple-100 active:scale-[0.98]"
+            >
+              <View className="w-10 h-10 rounded-xl bg-purple-100 items-center justify-center">
+                <BarChart3 size={20} color="#7C3AED" />
               </View>
-              <ChevronRight size={20} color="#EA580C" />
+              <Text className="text-slate-900 font-bold text-sm mt-3">
+                Insights
+              </Text>
+              <Text className="text-slate-500 text-xs mt-0.5">
+                View trends
+              </Text>
             </Pressable>
           </Animated.View>
 

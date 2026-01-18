@@ -16,6 +16,7 @@ A prioritized list of feature ideas for future development.
 - [x] **ErrorBoundary Integration** - App wrapped with error boundary for crash recovery.
 - [x] **Family Profiles** - Multiple dietary profiles with different flags/restrictions, quick switch on scan screen, color-coded indicators.
 - [x] **Favorites & Shopping List** - Add products to grocery list from result screen, share lists with family via code, multiple lists support.
+- [x] **Scan History Insights/Analytics** - Weekly/monthly health score trends, health breakdown charts, top flagged ingredients, category breakdown, personalized improvement tips.
 
 ---
 
@@ -35,13 +36,6 @@ A prioritized list of feature ideas for future development.
 ---
 
 ## 🎯 Medium-Priority Features
-
-### 6. Scan History Insights/Analytics
-- [ ] Weekly/monthly health score trends
-- [ ] "You scanned 15 products this week, 80% were healthy"
-- [ ] Most common flagged ingredients in your diet
-- [ ] Charts and visualizations
-- [ ] Improvement suggestions based on patterns
 
 ### 7. Offline Mode
 - [ ] Cache recently scanned products

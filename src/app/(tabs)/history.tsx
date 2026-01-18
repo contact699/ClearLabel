@@ -15,6 +15,7 @@ import {
   Filter,
   Clock,
   Scale,
+  BarChart3,
 } from 'lucide-react-native';
 import Animated, {
   FadeInRight,
@@ -282,9 +283,15 @@ export default function HistoryScreen() {
                 {products.length} product{products.length !== 1 ? 's' : ''} scanned
               </Text>
             </View>
-            <View className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-slate-100">
-              <Clock size={22} color={COLORS.brandGreen} />
-            </View>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push('/insights');
+              }}
+              className="w-12 h-12 rounded-2xl bg-purple-50 items-center justify-center border border-purple-100 active:scale-95"
+            >
+              <BarChart3 size={22} color="#7C3AED" />
+            </Pressable>
           </View>
         </Animated.View>
 
