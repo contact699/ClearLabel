@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, Share, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Pressable, Share, ActivityIndicator, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -28,6 +28,8 @@ import {
   Zap,
   Scale,
   ChevronRight,
+  ShoppingCart,
+  Check,
 } from 'lucide-react-native';
 import Animated, {
   FadeInDown,
@@ -39,7 +41,7 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useHistoryStore, useUserStore, useCompareStore } from '@/lib/stores';
+import { useHistoryStore, useUserStore, useCompareStore, useShoppingListStore } from '@/lib/stores';
 import { generateIngredientExplanation } from '@/lib/services/aiExplanation';
 import { COLORS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
@@ -210,6 +212,27 @@ export default function ResultScreen() {
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAIError] = useState<string | null>(null);
   const [selectedIngredient, setSelectedIngredient] = useState<ParsedIngredient | null>(null);
+  const [addedToList, setAddedToList] = useState(false);
+
+  // Handle add to shopping list
+  const handleAddToList = () => {
+    if (!product) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    const defaultList = useShoppingListStore.getState().getDefaultList();
+    useShoppingListStore.getState().addProductToList(defaultList.id, {
+      productId: product.id,
+      name: product.name,
+      brand: product.brand,
+      category: product.category,
+      imageURL: product.imageURL,
+    });
+    
+    setAddedToList(true);
+    
+    // Reset after 2 seconds
+    setTimeout(() => setAddedToList(false), 2000);
+  };
 
   const statusDetails = useMemo(() => {
     if (!product) return null;
@@ -349,6 +372,28 @@ export default function ResultScreen() {
                 </BlurView>
               </Pressable>
               <View className="flex-row gap-2">
+                <Pressable
+                  onPress={handleAddToList}
+                  className="w-11 h-11 rounded-full items-center justify-center overflow-hidden"
+                >
+                  <BlurView
+                    intensity={60}
+                    tint={addedToList ? 'light' : 'dark'}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: addedToList ? 'rgba(234, 88, 12, 0.9)' : 'transparent'
+                    }}
+                  >
+                    {addedToList ? (
+                      <Check size={20} color="#FFFFFF" />
+                    ) : (
+                      <ShoppingCart size={20} color="#FFFFFF" />
+                    )}
+                  </BlurView>
+                </Pressable>
                 <Pressable
                   onPress={handleAddToCompare}
                   className="w-11 h-11 rounded-full items-center justify-center overflow-hidden"

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ScanBarcode, TrendingUp, AlertTriangle, Lightbulb, ChevronRight, Sparkles, CheckCircle, XCircle } from 'lucide-react-native';
+import { ScanBarcode, TrendingUp, AlertTriangle, Lightbulb, ChevronRight, Sparkles, CheckCircle, XCircle, ShoppingCart } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -18,7 +18,7 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useUserStore, useHistoryStore } from '@/lib/stores';
+import { useUserStore, useHistoryStore, useShoppingListStore } from '@/lib/stores';
 import { COLORS, DAILY_TIPS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 import type { ScannedProduct, SafetyStatus } from '@/lib/types';
@@ -101,6 +101,12 @@ export default function HomeScreen() {
   const hasCompletedOnboarding = useUserStore((s) => s.profile?.hasCompletedOnboarding);
   const products = useHistoryStore((s) => s.products);
   const recentProducts = products.slice(0, 6);
+  
+  // Shopping list data
+  const shoppingLists = useShoppingListStore((s) => s.lists);
+  const activeListId = useShoppingListStore((s) => s.activeListId);
+  const activeList = shoppingLists.find((l) => l.id === activeListId) || shoppingLists[0];
+  const uncheckedCount = activeList ? useShoppingListStore.getState().getUncheckedCount(activeList.id) : 0;
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -245,6 +251,31 @@ export default function HomeScreen() {
                 <Text className="text-slate-500 text-sm mt-3">Flagged</Text>
               </View>
             </View>
+          </Animated.View>
+
+          {/* Shopping List Quick Access */}
+          <Animated.View entering={FadeInDown.delay(175).springify()} className="px-6 mt-4">
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push('/shopping-list');
+              }}
+              className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-4 flex-row items-center border border-orange-100 active:scale-[0.98]"
+              style={{ backgroundColor: '#FFF7ED' }}
+            >
+              <View className="w-12 h-12 rounded-xl bg-orange-100 items-center justify-center">
+                <ShoppingCart size={24} color="#EA580C" />
+              </View>
+              <View className="flex-1 ml-4">
+                <Text className="text-slate-900 font-bold text-base">
+                  {activeList?.name || 'Grocery List'}
+                </Text>
+                <Text className="text-slate-500 text-sm mt-0.5">
+                  {uncheckedCount > 0 ? `${uncheckedCount} items to buy` : 'Your shopping list'}
+                </Text>
+              </View>
+              <ChevronRight size={20} color="#EA580C" />
+            </Pressable>
           </Animated.View>
 
           {/* Recent Scans */}

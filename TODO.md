@@ -15,18 +15,13 @@ A prioritized list of feature ideas for future development.
 - [x] **Date Serialization Fix** - Proper Date object rehydration from AsyncStorage JSON strings.
 - [x] **ErrorBoundary Integration** - App wrapped with error boundary for crash recovery.
 - [x] **Family Profiles** - Multiple dietary profiles with different flags/restrictions, quick switch on scan screen, color-coded indicators.
+- [x] **Favorites & Shopping List** - Add products to grocery list from result screen, share lists with family via code, multiple lists support.
 
 ---
 
 ## 🔥 High-Impact Features
 
-### 2. Favorites & Shopping List
-- [ ] Save favorite products for quick reference
-- [ ] Add products to a shopping list
-- [ ] Share lists with family members
-- [ ] Export list as text/image
-
-### 3. Product Recall Alerts
+### 2. Product Recall Alerts
 - [ ] Push notifications when a previously scanned product is recalled
 - [ ] FDA/USDA recall API integration
 - [ ] History scan to check for recalled products
