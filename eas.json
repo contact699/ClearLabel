@@ -8,7 +8,10 @@
       "developmentClient": true,
       "distribution": "internal",
       "node": "20.18.0",
-      "channel": "development"
+      "channel": "development",
+      "ios": {
+        "image": "latest"
+      }
     },
     "preview": {
       "distribution": "internal",
@@ -16,7 +19,10 @@
         "buildType": "apk"
       },
       "node": "20.18.0",
-      "channel": "preview"
+      "channel": "preview",
+      "ios": {
+        "image": "latest"
+      }
     },
     "preview-apk": {
       "distribution": "internal",
@@ -30,7 +36,10 @@
     "production": {
       "autoIncrement": true,
       "node": "20.18.0",
-      "channel": "production"
+      "channel": "production",
+      "ios": {
+        "image": "macos-sequoia-15.4-xcode-16.3"
+      }
     }
   },
   "submit": {
