@@ -25,7 +25,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { v4 as uuidv4 } from 'uuid';
-import { useUserStore, useHistoryStore, useFamilyProfilesStore } from '@/lib/stores';
+import { useUserStore, useHistoryStore, useFamilyProfilesStore, useSubscriptionStore } from '@/lib/stores';
 import { fetchProductByBarcode, getDisplayName, getIngredientsText, getVeganStatus, getVegetarianStatus, getCleanedAllergens, getCleanedAdditives, getNutriscoreGrade, getNutritionData, calculateHealthRating } from '@/lib/services/openFoodFacts';
 import { analyzeProduct } from '@/lib/services/ingredientMatcher';
 import { extractIngredientsFromImage } from '@/lib/services/ocr';
@@ -347,6 +347,8 @@ export default function ScanScreen() {
         };
 
         useHistoryStore.getState().addProduct(scannedProduct);
+        // Increment scan count for free tier limits
+        useSubscriptionStore.getState().incrementScans();
         router.push(`/result?id=${scannedProduct.id}`);
       } catch (err) {
         console.error('Error processing barcode:', err);
@@ -469,6 +471,8 @@ export default function ScanScreen() {
     };
 
     useHistoryStore.getState().addProduct(scannedProduct);
+    // Increment scan count for free tier limits
+    useSubscriptionStore.getState().incrementScans();
     setShowOCRModal(false);
     router.push(`/result?id=${scannedProduct.id}`);
   };

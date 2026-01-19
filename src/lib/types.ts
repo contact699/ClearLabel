@@ -31,15 +31,41 @@ export const PROFILE_COLORS = [
 
 export type ProfileColorId = typeof PROFILE_COLORS[number]['id'];
 
+// Relationship types for family profiles
+export type ProfileRelationship = 'self' | 'spouse' | 'partner' | 'child' | 'parent' | 'sibling' | 'other';
+
+export interface SharedFamilyMember {
+  id: string;
+  name: string;
+  deviceId: string; // Device that shared/joined
+  joinedAt: Date;
+}
+
 export interface FamilyProfile {
   id: string;
   name: string;
   colorId: ProfileColorId;
   emoji?: string; // Optional emoji avatar
+  relationship?: ProfileRelationship; // Relationship to primary user
   flags: IngredientFlag[];
   createdAt: Date;
   updatedAt: Date;
+  // Sharing support
+  ownerDeviceId?: string; // Device that created this profile
+  shareCode?: string; // Code for sharing with family members
+  sharedWith: SharedFamilyMember[]; // Family members who have synced access
+  isShared?: boolean; // Whether this profile is shared across devices
 }
+
+export const RELATIONSHIP_LABELS: Record<ProfileRelationship, string> = {
+  self: 'Me',
+  spouse: 'Spouse',
+  partner: 'Partner',
+  child: 'Child',
+  parent: 'Parent',
+  sibling: 'Sibling',
+  other: 'Other',
+};
 
 export interface UserProfile {
   id: string;

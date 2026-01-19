@@ -221,7 +221,13 @@ export default function HomeScreen() {
           {/* Stats Cards */}
           <Animated.View entering={FadeInDown.delay(150).springify()} className="px-6 mt-6">
             <View className="flex-row gap-3">
-              <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+              <Pressable
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.push('/(tabs)/history');
+                }}
+                className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-100 active:scale-[0.98]"
+              >
                 <View className="flex-row items-center justify-between">
                   <View className="w-10 h-10 rounded-xl bg-teal-50 items-center justify-center">
                     <TrendingUp size={20} color={COLORS.brandGreen} />
@@ -229,9 +235,15 @@ export default function HomeScreen() {
                   <Text className="text-3xl font-bold text-slate-900">{stats.total}</Text>
                 </View>
                 <Text className="text-slate-500 text-sm mt-3">Total Scans</Text>
-              </View>
+              </Pressable>
 
-              <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+              <Pressable
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.push('/(tabs)/history?filter=safe');
+                }}
+                className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-100 active:scale-[0.98]"
+              >
                 <View className="flex-row items-center justify-between">
                   <View className="w-10 h-10 rounded-xl bg-emerald-50 items-center justify-center">
                     <CheckCircle size={20} color={COLORS.safeGreen} />
@@ -239,9 +251,15 @@ export default function HomeScreen() {
                   <Text className="text-3xl font-bold text-slate-900">{stats.safeProducts}</Text>
                 </View>
                 <Text className="text-slate-500 text-sm mt-3">Safe Products</Text>
-              </View>
+              </Pressable>
 
-              <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+              <Pressable
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.push('/(tabs)/history?filter=flagged');
+                }}
+                className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-100 active:scale-[0.98]"
+              >
                 <View className="flex-row items-center justify-between">
                   <View className="w-10 h-10 rounded-xl bg-amber-50 items-center justify-center">
                     <AlertTriangle size={20} color={COLORS.cautionYellow} />
@@ -249,7 +267,7 @@ export default function HomeScreen() {
                   <Text className="text-3xl font-bold text-slate-900">{stats.flaggedThisMonth}</Text>
                 </View>
                 <Text className="text-slate-500 text-sm mt-3">Flagged</Text>
-              </View>
+              </Pressable>
             </View>
           </Animated.View>
 

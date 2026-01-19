@@ -102,22 +102,90 @@ function getCategorySearchTerms(
   categories?: string
 ): string[] {
   const terms: string[] = [];
+  const nameLower = productName.toLowerCase();
   
-  // Extract from categories if available
-  if (categories) {
+  // Product type mapping - more specific to find similar products
+  const productTypes: { pattern: RegExp; searchTerm: string }[] = [
+    // Bars
+    { pattern: /granola\s*bar/i, searchTerm: 'granola bar' },
+    { pattern: /protein\s*bar/i, searchTerm: 'protein bar' },
+    { pattern: /energy\s*bar/i, searchTerm: 'energy bar' },
+    { pattern: /cereal\s*bar/i, searchTerm: 'cereal bar' },
+    { pattern: /snack\s*bar/i, searchTerm: 'snack bar' },
+    { pattern: /nutrition\s*bar/i, searchTerm: 'nutrition bar' },
+    { pattern: /oat\s*bar/i, searchTerm: 'oat bar' },
+    // Cereals & Breakfast
+    { pattern: /granola/i, searchTerm: 'granola' },
+    { pattern: /muesli/i, searchTerm: 'muesli' },
+    { pattern: /oatmeal|porridge/i, searchTerm: 'oatmeal' },
+    { pattern: /cereal/i, searchTerm: 'breakfast cereal' },
+    { pattern: /cornflakes/i, searchTerm: 'cornflakes' },
+    // Snacks
+    { pattern: /chips|crisps/i, searchTerm: 'chips' },
+    { pattern: /popcorn/i, searchTerm: 'popcorn' },
+    { pattern: /pretzel/i, searchTerm: 'pretzels' },
+    { pattern: /crackers/i, searchTerm: 'crackers' },
+    { pattern: /nuts|almonds|cashews|peanuts/i, searchTerm: 'nuts' },
+    { pattern: /trail\s*mix/i, searchTerm: 'trail mix' },
+    // Dairy
+    { pattern: /yogurt|yoghurt/i, searchTerm: 'yogurt' },
+    { pattern: /greek\s*yogurt/i, searchTerm: 'greek yogurt' },
+    { pattern: /milk/i, searchTerm: 'milk' },
+    { pattern: /cheese/i, searchTerm: 'cheese' },
+    { pattern: /butter/i, searchTerm: 'butter' },
+    { pattern: /cream/i, searchTerm: 'cream' },
+    // Drinks
+    { pattern: /juice/i, searchTerm: 'juice' },
+    { pattern: /soda|cola|pop/i, searchTerm: 'soft drink' },
+    { pattern: /smoothie/i, searchTerm: 'smoothie' },
+    { pattern: /tea/i, searchTerm: 'tea' },
+    { pattern: /coffee/i, searchTerm: 'coffee' },
+    { pattern: /water/i, searchTerm: 'water' },
+    { pattern: /energy\s*drink/i, searchTerm: 'energy drink' },
+    { pattern: /sports\s*drink/i, searchTerm: 'sports drink' },
+    // Sweet snacks
+    { pattern: /cookie|biscuit/i, searchTerm: 'cookies' },
+    { pattern: /chocolate/i, searchTerm: 'chocolate' },
+    { pattern: /candy|sweets/i, searchTerm: 'candy' },
+    { pattern: /ice\s*cream/i, searchTerm: 'ice cream' },
+    { pattern: /cake/i, searchTerm: 'cake' },
+    // Bread & Bakery
+    { pattern: /bread/i, searchTerm: 'bread' },
+    { pattern: /bagel/i, searchTerm: 'bagels' },
+    { pattern: /muffin/i, searchTerm: 'muffins' },
+    // Prepared foods
+    { pattern: /pasta/i, searchTerm: 'pasta' },
+    { pattern: /sauce/i, searchTerm: 'sauce' },
+    { pattern: /soup/i, searchTerm: 'soup' },
+    { pattern: /pizza/i, searchTerm: 'pizza' },
+    { pattern: /frozen/i, searchTerm: 'frozen meal' },
+    // Spreads
+    { pattern: /peanut\s*butter/i, searchTerm: 'peanut butter' },
+    { pattern: /jam|jelly/i, searchTerm: 'jam' },
+    { pattern: /nutella|hazelnut\s*spread/i, searchTerm: 'hazelnut spread' },
+  ];
+
+  // Find matching product types from name
+  for (const { pattern, searchTerm } of productTypes) {
+    if (pattern.test(nameLower)) {
+      terms.push(searchTerm);
+    }
+  }
+  
+  // Extract from categories if available and no direct matches
+  if (terms.length === 0 && categories) {
     const categoryList = categories.split(',').map(c => c.trim().toLowerCase());
     
-    // Look for specific category keywords
-    const foodKeywords = [
+    const categoryKeywords = [
       'cereals', 'breakfast', 'snacks', 'beverages', 'drinks', 'dairy', 
       'yogurt', 'cheese', 'bread', 'cookies', 'biscuits', 'chocolate',
       'chips', 'crackers', 'juice', 'soda', 'water', 'tea', 'coffee',
       'pasta', 'rice', 'sauce', 'soup', 'frozen', 'ice cream', 'candy',
-      'granola', 'bars', 'cereal', 'milk', 'butter', 'cream'
+      'granola', 'bars', 'cereal', 'milk', 'butter', 'cream', 'bakery'
     ];
     
     for (const cat of categoryList) {
-      for (const keyword of foodKeywords) {
+      for (const keyword of categoryKeywords) {
         if (cat.includes(keyword)) {
           terms.push(keyword);
         }
@@ -125,18 +193,14 @@ function getCategorySearchTerms(
     }
   }
   
-  // Extract from product name
-  const nameLower = productName.toLowerCase();
-  const nameKeywords = [
-    'cereal', 'granola', 'oatmeal', 'yogurt', 'milk', 'juice', 'soda',
-    'chips', 'crackers', 'cookies', 'bread', 'pasta', 'sauce', 'soup',
-    'bar', 'snack', 'drink', 'water', 'tea', 'coffee', 'chocolate',
-    'candy', 'ice cream', 'cheese', 'butter'
-  ];
-  
-  for (const keyword of nameKeywords) {
-    if (nameLower.includes(keyword)) {
-      terms.push(keyword);
+  // If still no matches, use first significant words from product name
+  if (terms.length === 0) {
+    const words = nameLower
+      .replace(/[^\w\s]/g, '')
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !['with', 'from', 'made', 'flavor', 'flavour', 'original'].includes(w));
+    if (words.length > 0) {
+      terms.push(words.slice(0, 2).join(' '));
     }
   }
   

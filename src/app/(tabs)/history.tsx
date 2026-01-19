@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, Pressable, TextInput, FlatList, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -40,6 +40,8 @@ const CATEGORY_FILTERS: { key: ProductCategory | 'all'; label: string; emoji: st
   { key: 'cleaning', label: 'Cleaning', emoji: '' },
   { key: 'petFood', label: 'Pet', emoji: '' },
 ];
+
+type StatusFilter = 'all' | 'safe' | 'flagged';
 
 function getProductStatus(product: ScannedProduct): SafetyStatus {
   const flagCount = product.flagsTriggered.length;
@@ -97,6 +99,7 @@ interface GroupedProducts {
 
 export default function HistoryScreen() {
   const router = useRouter();
+  const { filter } = useLocalSearchParams<{ filter?: StatusFilter }>();
   const products = useHistoryStore((s) => s.products);
   const removeProduct = useHistoryStore((s) => s.removeProduct);
   const searchProducts = useHistoryStore((s) => s.searchProducts);
@@ -107,7 +110,15 @@ export default function HistoryScreen() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Apply filter from URL params
+  useEffect(() => {
+    if (filter === 'safe' || filter === 'flagged') {
+      setStatusFilter(filter);
+    }
+  }, [filter]);
 
   const filteredProducts = useMemo(() => {
     let result = searchQuery.trim() ? searchProducts(searchQuery) : products;
@@ -116,8 +127,15 @@ export default function HistoryScreen() {
       result = result.filter((p: ScannedProduct) => p.category === selectedCategory);
     }
 
+    // Apply status filter
+    if (statusFilter === 'safe') {
+      result = result.filter((p: ScannedProduct) => p.flagsTriggered.length === 0);
+    } else if (statusFilter === 'flagged') {
+      result = result.filter((p: ScannedProduct) => p.flagsTriggered.length > 0);
+    }
+
     return result;
-  }, [products, searchQuery, selectedCategory, searchProducts]);
+  }, [products, searchQuery, selectedCategory, statusFilter, searchProducts]);
 
   const groupedProducts = useMemo(() => {
     const groups: Record<string, ScannedProduct[]> = {};
@@ -371,6 +389,47 @@ export default function HistoryScreen() {
               </Pressable>
             )}
           />
+        </Animated.View>
+
+        {/* Status Filters */}
+        <Animated.View
+          entering={FadeInDown.delay(175).springify()}
+          className="mt-3 px-6"
+        >
+          <View className="flex-row gap-2">
+            {[
+              { key: 'all' as StatusFilter, label: 'All', icon: null, color: COLORS.brandGreen },
+              { key: 'safe' as StatusFilter, label: 'Safe', icon: <CheckCircle size={14} color={statusFilter === 'safe' ? '#fff' : COLORS.safeGreen} />, color: COLORS.safeGreen },
+              { key: 'flagged' as StatusFilter, label: 'Flagged', icon: <AlertTriangle size={14} color={statusFilter === 'flagged' ? '#fff' : COLORS.alertRed} />, color: COLORS.alertRed },
+            ].map((item) => (
+              <Pressable
+                key={item.key}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setStatusFilter(item.key);
+                }}
+                className={cn(
+                  'flex-row items-center gap-1.5 px-3 py-2 rounded-lg',
+                  statusFilter === item.key
+                    ? ''
+                    : 'bg-slate-100'
+                )}
+                style={statusFilter === item.key ? { backgroundColor: item.color } : undefined}
+              >
+                {item.icon}
+                <Text
+                  className={cn(
+                    'font-medium text-sm',
+                    statusFilter === item.key
+                      ? 'text-white'
+                      : 'text-slate-600'
+                  )}
+                >
+                  {item.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </Animated.View>
 
         {/* Products List */}

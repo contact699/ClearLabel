@@ -7,6 +7,7 @@ import { useColorScheme } from '@/lib/useColorScheme';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { useSubscriptionStore } from '@/lib/stores';
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
@@ -19,9 +20,13 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav({ colorScheme }: { colorScheme: 'light' | 'dark' | null | undefined }) {
+  const initialize = useSubscriptionStore((s) => s.initialize);
+  
   useEffect(() => {
-    // Hide splash screen once the layout is mounted
-    SplashScreen.hideAsync();
+    // Initialize RevenueCat and hide splash screen
+    initialize().finally(() => {
+      SplashScreen.hideAsync();
+    });
   }, []);
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

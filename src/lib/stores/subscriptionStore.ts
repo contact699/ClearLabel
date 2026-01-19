@@ -2,6 +2,15 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { 
+  initializePurchases, 
+  checkProStatus, 
+  getOfferings, 
+  purchasePackage, 
+  restorePurchases,
+  isPurchasesReady,
+} from '../services/purchases';
+import type { PurchasesPackage, PurchasesOffering } from 'react-native-purchases';
 
 export type SubscriptionTier = 'free' | 'pro';
 
@@ -10,17 +19,24 @@ interface SubscriptionState {
   isLoading: boolean;
   scansThisMonth: number;
   lastScanReset: Date | null;
+  offerings: PurchasesOffering | null;
+  isInitialized: boolean;
 
   // Actions
+  initialize: () => Promise<void>;
+  refreshSubscriptionStatus: () => Promise<void>;
   setTier: (tier: SubscriptionTier) => void;
   incrementScans: () => void;
   resetMonthlyScans: () => void;
   canScan: () => boolean;
   getRemainingScans: () => number;
   isPro: () => boolean;
+  purchase: (pkg: PurchasesPackage) => Promise<{ success: boolean; error?: string }>;
+  restore: () => Promise<{ success: boolean; isPro: boolean; error?: string }>;
+  loadOfferings: () => Promise<void>;
 }
 
-const FREE_SCAN_LIMIT = 10;
+const FREE_SCAN_LIMIT = 20;
 
 export const useSubscriptionStore = create<SubscriptionState>()(
   persist(
@@ -29,6 +45,68 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       isLoading: false,
       scansThisMonth: 0,
       lastScanReset: null,
+      offerings: null,
+      isInitialized: false,
+
+      initialize: async () => {
+        if (get().isInitialized) return;
+        
+        set({ isLoading: true });
+        try {
+          await initializePurchases();
+          await get().refreshSubscriptionStatus();
+          await get().loadOfferings();
+          set({ isInitialized: true });
+        } catch (error) {
+          console.error('Failed to initialize subscriptions:', error);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      refreshSubscriptionStatus: async () => {
+        try {
+          const isPro = await checkProStatus();
+          set({ tier: isPro ? 'pro' : 'free' });
+        } catch (error) {
+          console.error('Failed to refresh subscription status:', error);
+        }
+      },
+
+      loadOfferings: async () => {
+        try {
+          const offerings = await getOfferings();
+          set({ offerings });
+        } catch (error) {
+          console.error('Failed to load offerings:', error);
+        }
+      },
+
+      purchase: async (pkg: PurchasesPackage) => {
+        set({ isLoading: true });
+        try {
+          const result = await purchasePackage(pkg);
+          if (result.success) {
+            set({ tier: 'pro' });
+          }
+          return { success: result.success, error: result.error };
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      restore: async () => {
+        set({ isLoading: true });
+        try {
+          const result = await restorePurchases();
+          if (result.isPro) {
+            set({ tier: 'pro' });
+          }
+          return result;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
 
       setTier: (tier) => {
         set({ tier });

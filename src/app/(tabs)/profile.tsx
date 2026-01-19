@@ -31,15 +31,17 @@ import {
   Users,
   Copy,
   Edit3,
+  Link,
+  UserPlus,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, SlideInRight } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
-import { useUserStore, useSubscriptionStore, useHistoryStore, useFamilyProfilesStore, getSuggestedProfileColor, PROFILE_EMOJIS } from '@/lib/stores';
+import { useUserStore, useSubscriptionStore, useHistoryStore, useFamilyProfilesStore, getSuggestedProfileColor, PROFILE_EMOJIS, RELATIONSHIP_EMOJIS } from '@/lib/stores';
 import { COLORS } from '@/lib/constants';
-import { PREDEFINED_FLAGS, PROFILE_COLORS } from '@/lib/types';
+import { PREDEFINED_FLAGS, PROFILE_COLORS, RELATIONSHIP_LABELS } from '@/lib/types';
 import { cn } from '@/lib/cn';
-import type { FlagType, IngredientFlag, NotificationPreferences, FamilyProfile, ProfileColorId } from '@/lib/types';
+import type { FlagType, IngredientFlag, NotificationPreferences, FamilyProfile, ProfileColorId, ProfileRelationship } from '@/lib/types';
 
 const FLAG_SECTIONS: { type: FlagType; title: string; icon: React.ReactNode; color: string; bgColor: string }[] = [
   { type: 'allergen', title: 'Allergens', icon: <AlertCircle size={18} color={COLORS.alertRed} />, color: COLORS.alertRed, bgColor: COLORS.alertRedLight },
@@ -99,7 +101,7 @@ export default function ProfileScreen() {
   const tier = useSubscriptionStore((s) => s.tier);
   const scansThisMonth = useSubscriptionStore((s) => s.scansThisMonth);
   const isPro = tier === 'pro';
-  const FREE_SCAN_LIMIT = 10;
+  const FREE_SCAN_LIMIT = 20;
   const remainingScans = Math.max(0, FREE_SCAN_LIMIT - scansThisMonth);
 
   // Family profiles state
@@ -126,11 +128,18 @@ export default function ProfileScreen() {
   const [newProfileName, setNewProfileName] = useState('');
   const [newProfileColorId, setNewProfileColorId] = useState<ProfileColorId>('blue');
   const [newProfileEmoji, setNewProfileEmoji] = useState<string | undefined>(undefined);
+  const [newProfileRelationship, setNewProfileRelationship] = useState<ProfileRelationship | undefined>(undefined);
+  const [showJoinCodeModal, setShowJoinCodeModal] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+
+  const RELATIONSHIPS: ProfileRelationship[] = ['self', 'spouse', 'partner', 'child', 'parent', 'sibling', 'other'];
 
   useEffect(() => {
     if (!profile) {
       useUserStore.getState().initializeProfile();
     }
+    // Initialize device ID for family profiles
+    useFamilyProfilesStore.getState().initializeDeviceId();
   }, [profile]);
 
   useEffect(() => {
@@ -144,6 +153,7 @@ export default function ProfileScreen() {
     setNewProfileName('');
     setNewProfileColorId(suggestedColor);
     setNewProfileEmoji(undefined);
+    setNewProfileRelationship(undefined);
     setEditingProfile(null);
     setShowFamilyProfileModal(true);
   };
@@ -152,6 +162,7 @@ export default function ProfileScreen() {
     setNewProfileName(familyProfile.name);
     setNewProfileColorId(familyProfile.colorId);
     setNewProfileEmoji(familyProfile.emoji);
+    setNewProfileRelationship(familyProfile.relationship);
     setEditingProfile(familyProfile);
     setShowFamilyProfileModal(true);
   };
@@ -165,18 +176,39 @@ export default function ProfileScreen() {
         name: newProfileName.trim(),
         colorId: newProfileColorId,
         emoji: newProfileEmoji,
+        relationship: newProfileRelationship,
       });
     } else {
       // Create new profile
       useFamilyProfilesStore.getState().createProfile(
         newProfileName.trim(),
         newProfileColorId,
-        newProfileEmoji
+        newProfileEmoji,
+        newProfileRelationship
       );
     }
     
     setShowFamilyProfileModal(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleJoinByCode = () => {
+    if (!joinCode.trim()) return;
+    
+    const result = useFamilyProfilesStore.getState().joinProfileByCode(
+      joinCode.trim(),
+      profile?.name || 'User'
+    );
+    
+    if (result.success) {
+      setShowJoinCodeModal(false);
+      setJoinCode('');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Success', 'You have joined the shared family profile!');
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Invalid Code', result.error || 'Could not find a profile with that code.');
+    }
   };
 
   const handleDeleteFamilyProfile = (familyProfile: FamilyProfile) => {
@@ -472,15 +504,24 @@ export default function ProfileScreen() {
                 <Users size={20} color={COLORS.brandGreen} />
                 <Text className="text-lg font-bold text-slate-900 ml-2">Family Profiles</Text>
               </View>
-              {useFamilyProfilesStore.getState().canCreateMore() && (
+              <View className="flex-row">
                 <Pressable
-                  onPress={openNewProfileModal}
-                  className="flex-row items-center bg-teal-50 rounded-xl px-3 py-2"
+                  onPress={() => setShowJoinCodeModal(true)}
+                  className="flex-row items-center bg-slate-100 rounded-xl px-3 py-2 mr-2"
                 >
-                  <Plus size={16} color={COLORS.brandGreen} />
-                  <Text className="text-teal-600 font-semibold ml-1 text-sm">Add</Text>
+                  <Link size={14} color={COLORS.textSecondary} />
+                  <Text className="text-slate-600 font-semibold ml-1 text-sm">Join</Text>
                 </Pressable>
-              )}
+                {useFamilyProfilesStore.getState().canCreateMore() && (
+                  <Pressable
+                    onPress={openNewProfileModal}
+                    className="flex-row items-center bg-teal-50 rounded-xl px-3 py-2"
+                  >
+                    <Plus size={16} color={COLORS.brandGreen} />
+                    <Text className="text-teal-600 font-semibold ml-1 text-sm">Add</Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
 
             {familyProfiles.length === 0 ? (
@@ -496,7 +537,10 @@ export default function ProfileScreen() {
                     Create Family Profiles
                   </Text>
                   <Text className="text-sm text-slate-500 text-center mt-1">
-                    Set up different dietary preferences for each family member
+                    Set up different dietary flags for each family member
+                  </Text>
+                  <Text className="text-xs text-teal-600 text-center mt-3">
+                    e.g., Dad avoids fish, Son avoids peanuts
                   </Text>
                 </Pressable>
               </Animated.View>
@@ -518,25 +562,27 @@ export default function ProfileScreen() {
                       <Pressable
                         onPress={() => {
                           Haptics.selectionAsync();
-                          useFamilyProfilesStore.getState().setActiveProfile(familyProfile.id);
+                          // Navigate to the profile detail screen
+                          router.push(`/family-profile?profileId=${familyProfile.id}`);
                         }}
                         onLongPress={() => {
                           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                          openEditProfileModal(familyProfile);
+                          // Set as active profile on long press
+                          useFamilyProfilesStore.getState().setActiveProfile(familyProfile.id);
                         }}
-                        className="mr-3 p-4 rounded-2xl items-center"
+                        className="mr-3 p-4 rounded-2xl"
                         style={{
                           backgroundColor: isActive ? colors.lightColor : '#FFFFFF',
                           borderWidth: isActive ? 2 : 1,
                           borderColor: isActive ? colors.color : '#E2E8F0',
-                          minWidth: 100,
+                          minWidth: 110,
                         }}
                       >
                         {familyProfile.emoji ? (
-                          <Text className="text-3xl mb-2">{familyProfile.emoji}</Text>
+                          <Text className="text-3xl mb-2 text-center">{familyProfile.emoji}</Text>
                         ) : (
                           <View
-                            className="w-12 h-12 rounded-full mb-2 items-center justify-center"
+                            className="w-12 h-12 rounded-full mb-2 items-center justify-center self-center"
                             style={{ backgroundColor: colors.color }}
                           >
                             <Text className="text-white text-lg font-bold">
@@ -551,8 +597,13 @@ export default function ProfileScreen() {
                         >
                           {familyProfile.name}
                         </Text>
-                        <Text className="text-xs text-slate-500 mt-0.5">
-                          {familyProfile.flags.length} flags
+                        {familyProfile.relationship && (
+                          <Text className="text-xs text-slate-400 text-center mt-0.5">
+                            {RELATIONSHIP_LABELS[familyProfile.relationship]}
+                          </Text>
+                        )}
+                        <Text className="text-xs text-slate-500 mt-1 text-center">
+                          {familyProfile.flags.length} {familyProfile.flags.length === 1 ? 'flag' : 'flags'}
                         </Text>
                         {isActive && (
                           <View
@@ -560,6 +611,11 @@ export default function ProfileScreen() {
                             style={{ backgroundColor: colors.color }}
                           >
                             <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                          </View>
+                        )}
+                        {familyProfile.isShared && (
+                          <View className="absolute top-2 left-2">
+                            <Users size={12} color={colors.color} />
                           </View>
                         )}
                       </Pressable>
@@ -571,7 +627,7 @@ export default function ProfileScreen() {
 
             {familyProfiles.length > 0 && (
               <Text className="text-xs text-slate-400 text-center mt-3">
-                Tap to switch • Long press to edit
+                Tap to edit flags • Long press to set active
               </Text>
             )}
           </View>
@@ -701,9 +757,9 @@ export default function ProfileScreen() {
 
             <Text className="text-lg font-bold text-slate-900 mb-4 mt-6">About</Text>
             <View className="bg-white rounded-2xl overflow-hidden border border-slate-100">
-              <SettingsRow icon={<HelpCircle size={20} color={COLORS.brandGreen} />} label="Help & Support" onPress={() => Linking.openURL('mailto:support@ingredientdecoder.app')} />
-              <SettingsRow icon={<Shield size={20} color={COLORS.brandGreen} />} label="Privacy Policy" onPress={() => Linking.openURL('https://openfoodfacts.org/privacy')} />
-              <SettingsRow icon={<FileText size={20} color={COLORS.brandGreen} />} label="Terms of Service" onPress={() => Linking.openURL('https://openfoodfacts.org/terms-of-use')} isLast />
+              <SettingsRow icon={<HelpCircle size={20} color={COLORS.brandGreen} />} label="Help & Support" onPress={() => router.push('/help')} />
+              <SettingsRow icon={<Shield size={20} color={COLORS.brandGreen} />} label="Privacy Policy" onPress={() => Linking.openURL('https://clearlabel.app/privacy')} />
+              <SettingsRow icon={<FileText size={20} color={COLORS.brandGreen} />} label="Terms of Service" onPress={() => Linking.openURL('https://clearlabel.app/terms')} isLast />
             </View>
 
             <Text className="text-center text-slate-400 text-sm mt-8">
@@ -878,11 +934,33 @@ export default function ProfileScreen() {
             <TextInput
               value={newProfileName}
               onChangeText={setNewProfileName}
-              placeholder="e.g. Kids, Spouse, Me"
+              placeholder="e.g. Dad, Mom, Kids"
               placeholderTextColor={COLORS.textMuted}
               autoFocus
               className="bg-white rounded-2xl px-4 py-4 text-lg text-slate-900 border border-slate-200 mb-6"
             />
+
+            {/* Relationship Picker */}
+            <Text className="text-sm font-medium text-slate-700 mb-2">Relationship</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6">
+              {RELATIONSHIPS.map((rel) => (
+                <Pressable
+                  key={rel}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setNewProfileRelationship(rel);
+                  }}
+                  className={cn(
+                    'px-4 py-2 rounded-xl mr-2',
+                    newProfileRelationship === rel ? 'bg-teal-100 border-2 border-teal-500' : 'bg-slate-100'
+                  )}
+                >
+                  <Text className={newProfileRelationship === rel ? 'text-teal-700 font-semibold' : 'text-slate-600'}>
+                    {RELATIONSHIP_LABELS[rel]}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
 
             {/* Emoji Picker */}
             <Text className="text-sm font-medium text-slate-700 mb-2">Avatar (optional)</Text>
@@ -971,6 +1049,55 @@ export default function ProfileScreen() {
               >
                 <Text className={newProfileName.trim() ? 'text-white font-semibold text-lg' : 'text-slate-400 font-semibold text-lg'}>
                   {editingProfile ? 'Save Changes' : 'Create Profile'}
+                </Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Join Code Modal */}
+      <Modal visible={showJoinCodeModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowJoinCodeModal(false)}>
+        <SafeAreaView className="flex-1 bg-slate-50">
+          <View className="flex-row items-center justify-between px-6 py-4 border-b border-slate-200">
+            <Text className="text-lg font-bold text-slate-900">Join Family Profile</Text>
+            <Pressable onPress={() => setShowJoinCodeModal(false)} className="p-2 bg-slate-100 rounded-full">
+              <X size={20} color={COLORS.textSecondary} />
+            </Pressable>
+          </View>
+          <View className="flex-1 px-6 pt-6">
+            <View className="items-center mb-8">
+              <View className="w-16 h-16 rounded-full bg-teal-50 items-center justify-center mb-4">
+                <UserPlus size={32} color={COLORS.brandGreen} />
+              </View>
+              <Text className="text-base text-slate-600 text-center">
+                Enter the share code from a family member to sync their dietary flags to your device
+              </Text>
+            </View>
+            
+            <Text className="text-sm font-medium text-slate-700 mb-2">Share Code</Text>
+            <TextInput
+              value={joinCode}
+              onChangeText={(text) => setJoinCode(text.toUpperCase())}
+              placeholder="ABCD12"
+              placeholderTextColor={COLORS.textMuted}
+              autoFocus
+              autoCapitalize="characters"
+              maxLength={6}
+              className="bg-white rounded-2xl px-4 py-4 text-2xl text-slate-900 border border-slate-200 text-center tracking-[8px] font-bold"
+            />
+            
+            <Pressable
+              onPress={handleJoinByCode}
+              disabled={joinCode.length !== 6}
+              className="overflow-hidden rounded-2xl mt-6"
+            >
+              <LinearGradient
+                colors={joinCode.length === 6 ? [COLORS.brandGreen, COLORS.gradientEnd] : ['#E2E8F0', '#E2E8F0']}
+                style={{ padding: 16, borderRadius: 16, alignItems: 'center' }}
+              >
+                <Text className={joinCode.length === 6 ? 'text-white font-semibold text-lg' : 'text-slate-400 font-semibold text-lg'}>
+                  Join Profile
                 </Text>
               </LinearGradient>
             </Pressable>

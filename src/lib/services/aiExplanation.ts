@@ -3,6 +3,9 @@ import type { NutritionData, HealthRating } from '../types';
 
 const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_VIBECODE_ANTHROPIC_API_KEY;
 
+// Debug: log if key is present (not the actual key)
+console.log('[AI] Anthropic key configured:', !!ANTHROPIC_API_KEY, 'length:', ANTHROPIC_API_KEY?.length || 0);
+
 export interface AIExplanationResult {
   success: boolean;
   explanation?: string;
@@ -119,7 +122,7 @@ Guidelines:
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250514',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 500,
         messages: [
           {
@@ -132,10 +135,11 @@ Guidelines:
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('Claude API error:', errorData);
+      console.error('Claude API error:', response.status, errorData);
+      const errorMsg = errorData?.error?.message || `API error: ${response.status}`;
       return {
         success: false,
-        error: 'Failed to generate explanation. Please try again.',
+        error: errorMsg,
       };
     }
 

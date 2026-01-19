@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, Share, ActivityIndicator, Dimensions, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, Share, ActivityIndicator, Dimensions, Alert, Modal, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -30,6 +30,9 @@ import {
   ChevronRight,
   ShoppingCart,
   Check,
+  ExternalLink,
+  Search,
+  X,
 } from 'lucide-react-native';
 import Animated, {
   FadeInDown,
@@ -43,6 +46,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { useHistoryStore, useUserStore, useCompareStore, useShoppingListStore } from '@/lib/stores';
 import { generateIngredientExplanation } from '@/lib/services/aiExplanation';
+import { findHealthierAlternatives, type AlternativeProduct } from '@/lib/services/alternatives';
 import { COLORS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 import { NutriscoreBadge } from '@/components/NutriscoreBadge';
@@ -213,6 +217,46 @@ export default function ResultScreen() {
   const [aiError, setAIError] = useState<string | null>(null);
   const [selectedIngredient, setSelectedIngredient] = useState<ParsedIngredient | null>(null);
   const [addedToList, setAddedToList] = useState(false);
+  const [alternatives, setAlternatives] = useState<AlternativeProduct[]>([]);
+  const [isLoadingAlternatives, setIsLoadingAlternatives] = useState(false);
+  const [showAlternatives, setShowAlternatives] = useState(false);
+  const [showNutriscoreInfo, setShowNutriscoreInfo] = useState(false);
+  const [showNovaInfo, setShowNovaInfo] = useState(false);
+  const [showAllergensModal, setShowAllergensModal] = useState(false);
+
+  // Fetch healthier alternatives on-demand
+  const handleFindAlternatives = async () => {
+    if (!product) return;
+    
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setShowAlternatives(true);
+    setIsLoadingAlternatives(true);
+    
+    try {
+      const results = await findHealthierAlternatives(
+        product.name,
+        product.rawCategories,
+        product.barcode,
+        product.nutriscoreGrade,
+        product.novaScore,
+        product.category,
+        5
+      );
+      setAlternatives(results);
+    } catch (error) {
+      console.error('Failed to fetch alternatives:', error);
+    } finally {
+      setIsLoadingAlternatives(false);
+    }
+  };
+
+  // Handle external product search
+  const handleSearchProduct = (productName: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const searchQuery = encodeURIComponent(productName);
+    // Use Google Shopping search
+    Linking.openURL(`https://www.google.com/search?tbm=shop&q=${searchQuery}`);
+  };
 
   // Handle add to shopping list
   const handleAddToList = () => {
@@ -496,44 +540,74 @@ export default function ResultScreen() {
 
             {/* Nutriscore */}
             {product.nutriscoreGrade && (
-              <View className="flex-1 bg-white rounded-2xl p-4 border border-slate-100">
-                <NutriscoreBadge grade={product.nutriscoreGrade} size="small" />
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowNutriscoreInfo(true);
+                }}
+                className="flex-1 bg-white rounded-2xl p-4 border border-slate-100 active:bg-slate-50"
+              >
+                <View className="flex-row items-start justify-between">
+                  <NutriscoreBadge grade={product.nutriscoreGrade} size="small" />
+                  <Info size={14} color={COLORS.textMuted} />
+                </View>
                 <Text className="text-slate-900 font-semibold mt-2">Nutriscore</Text>
-              </View>
+              </Pressable>
             )}
 
             {/* NOVA Score */}
             {product.novaScore && (
-              <View className="flex-1 bg-white rounded-2xl p-4 border border-slate-100">
-                <Text
-                  className="text-2xl font-bold"
-                  style={{
-                    color:
-                      product.novaScore === 1
-                        ? COLORS.safeGreen
-                        : product.novaScore === 4
-                          ? COLORS.alertRed
-                          : COLORS.cautionYellow,
-                  }}
-                >
-                  {product.novaScore}
-                </Text>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowNovaInfo(true);
+                }}
+                className="flex-1 bg-white rounded-2xl p-4 border border-slate-100 active:bg-slate-50"
+              >
+                <View className="flex-row items-start justify-between">
+                  <Text
+                    className="text-2xl font-bold"
+                    style={{
+                      color:
+                        product.novaScore === 1
+                          ? COLORS.safeGreen
+                          : product.novaScore === 4
+                            ? COLORS.alertRed
+                            : COLORS.cautionYellow,
+                    }}
+                  >
+                    {product.novaScore}
+                  </Text>
+                  <Info size={14} color={COLORS.textMuted} />
+                </View>
                 <Text className="text-slate-900 font-semibold mt-2">NOVA</Text>
-              </View>
+              </Pressable>
             )}
 
             {/* Allergens */}
-            <View className="flex-1 bg-white rounded-2xl p-4 border border-slate-100">
-              <Text
-                className="text-2xl font-bold"
-                style={{
-                  color: product.allergens.length > 0 ? COLORS.cautionYellow : COLORS.safeGreen,
-                }}
-              >
-                {product.allergens.length}
-              </Text>
+            <Pressable
+              onPress={() => {
+                if (product.allergens.length > 0) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowAllergensModal(true);
+                }
+              }}
+              className="flex-1 bg-white rounded-2xl p-4 border border-slate-100 active:bg-slate-50"
+              disabled={product.allergens.length === 0}
+            >
+              <View className="flex-row items-start justify-between">
+                <Text
+                  className="text-2xl font-bold"
+                  style={{
+                    color: product.allergens.length > 0 ? COLORS.cautionYellow : COLORS.safeGreen,
+                  }}
+                >
+                  {product.allergens.length}
+                </Text>
+                {product.allergens.length > 0 && <Info size={14} color={COLORS.textMuted} />}
+              </View>
               <Text className="text-slate-900 font-semibold mt-2">Allergens</Text>
-            </View>
+            </Pressable>
           </View>
         </Animated.View>
 
@@ -634,6 +708,139 @@ export default function ResultScreen() {
           </Animated.View>
         )}
 
+        {/* Healthier Alternatives */}
+        <Animated.View entering={FadeInDown.delay(350).springify()} className="px-5 mt-6">
+          {!showAlternatives ? (
+            <Pressable
+              onPress={handleFindAlternatives}
+              className="bg-white rounded-2xl p-5 border-2 border-dashed border-emerald-400 active:scale-[0.98]"
+            >
+              <View className="flex-row items-center">
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  style={{ width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Search size={24} color="#FFFFFF" />
+                </LinearGradient>
+                <View className="flex-1 ml-4">
+                  <Text className="text-slate-900 font-bold text-base">Find Healthier Alternatives</Text>
+                  <Text className="text-slate-500 text-sm mt-1">
+                    Discover similar products with better nutrition
+                  </Text>
+                </View>
+                <Leaf size={20} color="#10B981" />
+              </View>
+            </Pressable>
+          ) : (
+            <View>
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-lg font-bold text-slate-900">
+                  Healthier Alternatives
+                </Text>
+                {isLoadingAlternatives ? (
+                  <ActivityIndicator size="small" color={COLORS.brandGreen} />
+                ) : (
+                  <Pressable onPress={handleFindAlternatives} className="p-2">
+                    <RefreshCw size={16} color={COLORS.textMuted} />
+                  </Pressable>
+                )}
+              </View>
+              
+              {isLoadingAlternatives ? (
+                <View className="bg-white rounded-2xl p-8 border border-slate-100 items-center">
+                  <ActivityIndicator size="small" color={COLORS.brandGreen} />
+                  <Text className="text-slate-500 mt-3 text-sm">Searching for healthier options...</Text>
+                </View>
+              ) : alternatives.length > 0 ? (
+                <View className="bg-white rounded-2xl overflow-hidden border border-slate-100">
+                  {alternatives.map((alt, index) => (
+                    <View
+                      key={alt.barcode}
+                      className={cn(
+                        'p-4',
+                        index < alternatives.length - 1 && 'border-b border-slate-100'
+                      )}
+                    >
+                      <View className="flex-row items-center">
+                        {alt.imageUrl ? (
+                          <Image
+                            source={{ uri: alt.imageUrl }}
+                            style={{ width: 50, height: 50, borderRadius: 10 }}
+                            contentFit="cover"
+                          />
+                        ) : (
+                          <View className="w-[50px] h-[50px] rounded-xl bg-slate-100 items-center justify-center">
+                            <Package size={24} color={COLORS.textMuted} />
+                          </View>
+                        )}
+                        <View className="ml-3 flex-1">
+                          <Text className="text-base font-semibold text-slate-900" numberOfLines={1}>
+                            {alt.name}
+                          </Text>
+                          <Text className="text-sm text-teal-600 mt-0.5">
+                            {alt.improvementReason}
+                          </Text>
+                          <View className="flex-row items-center mt-1 gap-2">
+                            {alt.nutriscoreGrade && (
+                              <View className={cn(
+                                'px-2 py-0.5 rounded-full',
+                                alt.nutriscoreGrade.toLowerCase() === 'a' ? 'bg-green-100' :
+                                alt.nutriscoreGrade.toLowerCase() === 'b' ? 'bg-lime-100' :
+                                'bg-yellow-100'
+                              )}>
+                                <Text className={cn(
+                                  'text-xs font-bold',
+                                  alt.nutriscoreGrade.toLowerCase() === 'a' ? 'text-green-700' :
+                                  alt.nutriscoreGrade.toLowerCase() === 'b' ? 'text-lime-700' :
+                                  'text-yellow-700'
+                                )}>
+                                  Nutri-Score {alt.nutriscoreGrade.toUpperCase()}
+                                </Text>
+                              </View>
+                            )}
+                            {alt.novaScore && (
+                              <Text className="text-xs text-slate-500">NOVA {alt.novaScore}</Text>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                      {/* Action buttons */}
+                      <View className="flex-row gap-2 mt-3">
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            router.push({
+                              pathname: '/(tabs)/scan',
+                              params: { barcode: alt.barcode }
+                            });
+                          }}
+                          className="flex-1 bg-teal-50 rounded-lg py-2.5 flex-row items-center justify-center gap-2"
+                        >
+                          <Info size={16} color={COLORS.brandGreen} />
+                          <Text className="text-teal-600 font-semibold text-sm">View Details</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleSearchProduct(alt.name)}
+                          className="flex-1 bg-slate-100 rounded-lg py-2.5 flex-row items-center justify-center gap-2"
+                        >
+                          <ExternalLink size={16} color={COLORS.textSecondary} />
+                          <Text className="text-slate-600 font-semibold text-sm">Shop</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View className="bg-white rounded-2xl p-6 border border-slate-100 items-center">
+                  <Text className="text-slate-500 text-sm text-center">
+                    No alternatives found for this product type.
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </Animated.View>
+
         {/* All Ingredients */}
         <Animated.View entering={FadeInDown.delay(300).springify()} className="px-5 mt-6 mb-8">
           <Pressable
@@ -692,6 +899,177 @@ export default function ResultScreen() {
         ingredientName={selectedIngredient?.name ?? ''}
         flagReasons={selectedIngredient?.flagReasons ?? []}
       />
+
+      {/* Nutriscore Info Modal */}
+      <Modal
+        visible={showNutriscoreInfo}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowNutriscoreInfo(false)}
+      >
+        <View className="flex-1 bg-black/50 items-center justify-center px-6">
+          <View className="bg-white rounded-3xl w-full max-w-sm overflow-hidden">
+            <LinearGradient
+              colors={['#10B981', '#059669']}
+              style={{ padding: 20, alignItems: 'center' }}
+            >
+              <Text className="text-white text-xl font-bold">What is Nutri-Score?</Text>
+            </LinearGradient>
+            <View className="p-5">
+              <Text className="text-slate-700 leading-6 mb-4">
+                Nutri-Score is a nutrition label that rates foods from A (best) to E (worst) based on their nutritional quality.
+              </Text>
+              <View className="gap-2 mb-4">
+                <View className="flex-row items-center gap-3">
+                  <View className="w-8 h-8 rounded-lg bg-green-500 items-center justify-center">
+                    <Text className="text-white font-bold">A</Text>
+                  </View>
+                  <Text className="text-slate-600 flex-1">Excellent nutritional quality</Text>
+                </View>
+                <View className="flex-row items-center gap-3">
+                  <View className="w-8 h-8 rounded-lg bg-lime-500 items-center justify-center">
+                    <Text className="text-white font-bold">B</Text>
+                  </View>
+                  <Text className="text-slate-600 flex-1">Good nutritional quality</Text>
+                </View>
+                <View className="flex-row items-center gap-3">
+                  <View className="w-8 h-8 rounded-lg bg-yellow-400 items-center justify-center">
+                    <Text className="text-white font-bold">C</Text>
+                  </View>
+                  <Text className="text-slate-600 flex-1">Average nutritional quality</Text>
+                </View>
+                <View className="flex-row items-center gap-3">
+                  <View className="w-8 h-8 rounded-lg bg-orange-500 items-center justify-center">
+                    <Text className="text-white font-bold">D</Text>
+                  </View>
+                  <Text className="text-slate-600 flex-1">Poor nutritional quality</Text>
+                </View>
+                <View className="flex-row items-center gap-3">
+                  <View className="w-8 h-8 rounded-lg bg-red-500 items-center justify-center">
+                    <Text className="text-white font-bold">E</Text>
+                  </View>
+                  <Text className="text-slate-600 flex-1">Bad nutritional quality</Text>
+                </View>
+              </View>
+              <Pressable
+                onPress={() => setShowNutriscoreInfo(false)}
+                className="bg-teal-600 rounded-xl py-3"
+              >
+                <Text className="text-white font-semibold text-center">Got it</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* NOVA Info Modal */}
+      <Modal
+        visible={showNovaInfo}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowNovaInfo(false)}
+      >
+        <View className="flex-1 bg-black/50 items-center justify-center px-6">
+          <View className="bg-white rounded-3xl w-full max-w-sm overflow-hidden">
+            <LinearGradient
+              colors={['#F59E0B', '#D97706']}
+              style={{ padding: 20, alignItems: 'center' }}
+            >
+              <Text className="text-white text-xl font-bold">What is NOVA?</Text>
+            </LinearGradient>
+            <View className="p-5">
+              <Text className="text-slate-700 leading-6 mb-4">
+                NOVA classifies foods by their level of processing. Lower scores indicate less processed, more natural foods.
+              </Text>
+              <View className="gap-3 mb-4">
+                <View className="flex-row items-start gap-3">
+                  <View className="w-8 h-8 rounded-lg bg-green-500 items-center justify-center">
+                    <Text className="text-white font-bold">1</Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-slate-900 font-semibold">Unprocessed</Text>
+                    <Text className="text-slate-500 text-sm">Fresh fruits, vegetables, meat, eggs</Text>
+                  </View>
+                </View>
+                <View className="flex-row items-start gap-3">
+                  <View className="w-8 h-8 rounded-lg bg-lime-500 items-center justify-center">
+                    <Text className="text-white font-bold">2</Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-slate-900 font-semibold">Culinary Ingredients</Text>
+                    <Text className="text-slate-500 text-sm">Oils, butter, sugar, salt, flour</Text>
+                  </View>
+                </View>
+                <View className="flex-row items-start gap-3">
+                  <View className="w-8 h-8 rounded-lg bg-yellow-500 items-center justify-center">
+                    <Text className="text-white font-bold">3</Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-slate-900 font-semibold">Processed Foods</Text>
+                    <Text className="text-slate-500 text-sm">Canned vegetables, cheese, bread</Text>
+                  </View>
+                </View>
+                <View className="flex-row items-start gap-3">
+                  <View className="w-8 h-8 rounded-lg bg-red-500 items-center justify-center">
+                    <Text className="text-white font-bold">4</Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-slate-900 font-semibold">Ultra-Processed</Text>
+                    <Text className="text-slate-500 text-sm">Sodas, chips, instant noodles</Text>
+                  </View>
+                </View>
+              </View>
+              <Pressable
+                onPress={() => setShowNovaInfo(false)}
+                className="bg-amber-500 rounded-xl py-3"
+              >
+                <Text className="text-white font-semibold text-center">Got it</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Allergens Modal */}
+      <Modal
+        visible={showAllergensModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAllergensModal(false)}
+      >
+        <View className="flex-1 bg-black/50 items-center justify-center px-6">
+          <View className="bg-white rounded-3xl w-full max-w-sm overflow-hidden">
+            <LinearGradient
+              colors={['#F59E0B', '#D97706']}
+              style={{ padding: 20, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 }}
+            >
+              <AlertTriangle size={24} color="#FFFFFF" />
+              <Text className="text-white text-xl font-bold">Allergens Detected</Text>
+            </LinearGradient>
+            <View className="p-5">
+              <Text className="text-slate-500 text-sm mb-4">
+                This product contains the following allergens:
+              </Text>
+              <View className="gap-2 mb-5">
+                {product.allergens.map((allergen, index) => (
+                  <View key={index} className="flex-row items-center gap-3 bg-amber-50 rounded-xl px-4 py-3">
+                    <AlertTriangle size={18} color={COLORS.cautionYellow} />
+                    <Text className="text-slate-800 font-medium capitalize">
+                      {allergen.replace(/-/g, ' ').replace(/en:/g, '')}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <Pressable
+                onPress={() => setShowAllergensModal(false)}
+                className="bg-slate-800 rounded-xl py-3"
+              >
+                <Text className="text-white font-semibold text-center">Close</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

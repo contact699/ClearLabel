@@ -16,7 +16,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.patrob316.clearlabel",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCalendarsUsageDescription": "ClearLabel does not access your calendar. This permission is required by a third-party library.",
+        "NSContactsUsageDescription": "ClearLabel does not access your contacts. This permission is required by a third-party library.",
+        "NSLocationWhenInUseUsageDescription": "ClearLabel does not access your location. This permission is required by a third-party library."
       }
     },
     "android": {
@@ -50,7 +53,8 @@
       "expo-asset",
       "expo-video",
       "expo-web-browser",
-      "react-native-edge-to-edge"
+      "react-native-edge-to-edge",
+      "expo-build-properties"
     ],
     "updates": {
       "url": "https://u.expo.dev/31878629-293c-4c2f-827a-64c227421088"

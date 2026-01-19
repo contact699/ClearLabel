@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, Pressable, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,63 +12,124 @@ import {
   Users,
   Download,
   Crown,
-  Sparkles,
+  ShoppingCart,
+  Zap,
 } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useSubscriptionStore } from '@/lib/stores';
 import { COLORS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
-
-type BillingPeriod = 'monthly' | 'annual';
+import { PACKAGE_TYPE } from 'react-native-purchases';
 
 const FEATURES = [
-  { icon: Infinity, title: 'Unlimited Scans', free: '10/month', pro: 'Unlimited' },
-  { icon: Clock, title: 'Scan History', free: '30 days', pro: 'Forever' },
+  { icon: Infinity, title: 'Unlimited Scans', free: '20/month', pro: 'Unlimited' },
   { icon: Brain, title: 'AI Explanations', free: false, pro: true },
-  { icon: Users, title: 'Custom Flags', free: '5', pro: 'Unlimited' },
+  { icon: Clock, title: 'Scan History', free: '30 days', pro: 'Forever' },
+  { icon: Users, title: 'Family Profiles', free: '2', pro: 'Unlimited' },
+  { icon: ShoppingCart, title: 'Shared Lists', free: '1', pro: 'Unlimited' },
   { icon: Download, title: 'Export Data', free: false, pro: true },
 ];
 
-const PRICES = {
-  monthly: { price: '$4.99', period: '/month', savings: '' },
-  annual: { price: '$29.99', period: '/year', savings: 'Save 50%' },
-};
-
 export default function PaywallScreen() {
   const router = useRouter();
-  const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod>('annual');
-  const [isLoading, setIsLoading] = useState(false);
-  const setTier = useSubscriptionStore((s) => s.setTier);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>('annual');
+  
+  const isLoading = useSubscriptionStore((s) => s.isLoading);
+  const offerings = useSubscriptionStore((s) => s.offerings);
+  const purchase = useSubscriptionStore((s) => s.purchase);
+  const restore = useSubscriptionStore((s) => s.restore);
+  const loadOfferings = useSubscriptionStore((s) => s.loadOfferings);
+
+  // Load offerings on mount
+  useEffect(() => {
+    loadOfferings();
+  }, []);
+
+  // Get available packages
+  const packages = useMemo(() => {
+    if (!offerings?.availablePackages) return [];
+    return offerings.availablePackages;
+  }, [offerings]);
+
+  // Select annual by default, or first package
+  useEffect(() => {
+    if (packages.length > 0 && selectedPackageId === 'annual') {
+      const annual = packages.find(p => p.packageType === PACKAGE_TYPE.ANNUAL);
+      if (annual) {
+        setSelectedPackageId(annual.identifier);
+      } else if (packages[0]) {
+        setSelectedPackageId(packages[0].identifier);
+      }
+    }
+  }, [packages]);
+
+  const selectedPackage = packages.find(p => p.identifier === selectedPackageId);
+
+  // Calculate savings for annual
+  const annualSavings = useMemo(() => {
+    const monthly = packages.find(p => p.packageType === PACKAGE_TYPE.MONTHLY);
+    const annual = packages.find(p => p.packageType === PACKAGE_TYPE.ANNUAL);
+    
+    if (!monthly || !annual) return 'Save 50%'; // Default
+    
+    const monthlyAnnualCost = monthly.product.price * 12;
+    const savings = Math.round((1 - annual.product.price / monthlyAnnualCost) * 100);
+    return savings > 0 ? `Save ${savings}%` : null;
+  }, [packages]);
 
   const handleSubscribe = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setIsLoading(true);
 
-    // Note: This is where RevenueCat integration would go
-    // For now, we'll show a message to set up RevenueCat
-    setTimeout(() => {
-      setIsLoading(false);
-      // Show alert that RevenueCat needs to be set up
-      alert('Please set up RevenueCat in the PAYMENTS tab to enable subscriptions.');
-    }, 1000);
+    // If no real packages, show setup message
+    if (!selectedPackage) {
+      Alert.alert(
+        'Setup Required',
+        'To enable purchases:\n\n1. Create a RevenueCat account\n2. Add your API keys to .env\n3. Create products in App Store Connect\n4. Configure offerings in RevenueCat',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    const result = await purchase(selectedPackage);
+    
+    if (result.success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+    } else if (result.error && result.error !== 'cancelled') {
+      Alert.alert('Purchase Failed', result.error);
+    }
   };
 
   const handleRestore = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
-      alert('Please set up RevenueCat in the PAYMENTS tab to restore purchases.');
-    }, 1000);
+    const result = await restore();
+    
+    if (result.success) {
+      if (result.isPro) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert('Restored!', 'Your Pro subscription has been restored.');
+        router.back();
+      } else {
+        Alert.alert('No Subscription Found', 'No active subscription found for this account.');
+      }
+    } else if (result.error) {
+      Alert.alert('Restore Failed', result.error);
+    }
   };
 
+  // Display prices
+  const monthlyPrice = packages.find(p => p.packageType === PACKAGE_TYPE.MONTHLY)?.product.priceString || '$4.99';
+  const annualPrice = packages.find(p => p.packageType === PACKAGE_TYPE.ANNUAL)?.product.priceString || '$29.99';
+
   return (
-    <View className="flex-1 bg-neutral-bg-secondary">
+    <View className="flex-1 bg-slate-50">
       <LinearGradient
-        colors={['#2D9D78', '#1A7D5C']}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 300 }}
+        colors={['#0D9488', '#0F766E']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 320 }}
       />
 
       <SafeAreaView className="flex-1">
@@ -80,14 +141,14 @@ export default function PaywallScreen() {
           >
             <X size={24} color="#FFFFFF" />
           </Pressable>
-          <Pressable onPress={handleRestore}>
+          <Pressable onPress={handleRestore} disabled={isLoading}>
             <Text className="text-white/80 font-medium">Restore</Text>
           </Pressable>
         </View>
 
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           {/* Hero */}
-          <Animated.View entering={FadeInDown.delay(100).springify()} className="items-center px-8 mt-4">
+          <Animated.View entering={FadeInDown.delay(100).springify()} className="items-center px-8 mt-2">
             <View className="w-20 h-20 rounded-full bg-white/20 items-center justify-center mb-4">
               <Crown size={40} color="#FFFFFF" />
             </View>
@@ -95,74 +156,67 @@ export default function PaywallScreen() {
               Unlock Pro
             </Text>
             <Text className="text-white/80 text-center mt-2 text-lg">
-              Get unlimited scans and AI-powered insights
+              Get unlimited scans and premium features
             </Text>
           </Animated.View>
 
-          {/* Billing Toggle */}
-          <Animated.View entering={FadeInDown.delay(200).springify()} className="px-8 mt-8">
-            <View className="flex-row bg-white/20 rounded-2xl p-1">
+          {/* Package Selection */}
+          <Animated.View entering={FadeInDown.delay(200).springify()} className="px-6 mt-6">
+            <View className="flex-row gap-3">
+              {/* Monthly Option */}
               <Pressable
-                onPress={() => setSelectedPeriod('monthly')}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  const pkg = packages.find(p => p.packageType === PACKAGE_TYPE.MONTHLY);
+                  setSelectedPackageId(pkg?.identifier || 'monthly');
+                }}
                 className={cn(
-                  'flex-1 py-3 rounded-xl',
-                  selectedPeriod === 'monthly' && 'bg-white'
+                  'flex-1 rounded-2xl p-4 border-2',
+                  (selectedPackageId === 'monthly' || selectedPackage?.packageType === PACKAGE_TYPE.MONTHLY)
+                    ? 'bg-white border-teal-500' 
+                    : 'bg-white/90 border-transparent'
                 )}
               >
-                <Text
-                  className={cn(
-                    'text-center font-semibold',
-                    selectedPeriod === 'monthly' ? 'text-brand-green' : 'text-white'
-                  )}
-                >
-                  Monthly
+                <Text className="font-semibold text-center text-slate-600">Monthly</Text>
+                <Text className="text-xl font-bold text-center mt-1 text-slate-900">
+                  {monthlyPrice}
                 </Text>
+                <Text className="text-slate-500 text-xs text-center">per month</Text>
               </Pressable>
+
+              {/* Annual Option */}
               <Pressable
-                onPress={() => setSelectedPeriod('annual')}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  const pkg = packages.find(p => p.packageType === PACKAGE_TYPE.ANNUAL);
+                  setSelectedPackageId(pkg?.identifier || 'annual');
+                }}
                 className={cn(
-                  'flex-1 py-3 rounded-xl',
-                  selectedPeriod === 'annual' && 'bg-white'
+                  'flex-1 rounded-2xl p-4 border-2',
+                  (selectedPackageId === 'annual' || selectedPackage?.packageType === PACKAGE_TYPE.ANNUAL)
+                    ? 'bg-white border-teal-500' 
+                    : 'bg-white/90 border-transparent'
                 )}
               >
-                <View className="flex-row items-center justify-center">
-                  <Text
-                    className={cn(
-                      'font-semibold',
-                      selectedPeriod === 'annual' ? 'text-brand-green' : 'text-white'
-                    )}
-                  >
-                    Annual
-                  </Text>
-                  {PRICES.annual.savings && (
-                    <View className="bg-safe rounded-full px-2 py-0.5 ml-2">
-                      <Text className="text-white text-xs font-medium">
-                        {PRICES.annual.savings}
-                      </Text>
-                    </View>
-                  )}
-                </View>
+                {annualSavings && (
+                  <View className="absolute -top-2 -right-2 bg-amber-500 rounded-full px-2 py-0.5">
+                    <Text className="text-white text-xs font-bold">{annualSavings}</Text>
+                  </View>
+                )}
+                <Text className="font-semibold text-center text-slate-600">Annual</Text>
+                <Text className="text-xl font-bold text-center mt-1 text-slate-900">
+                  {annualPrice}
+                </Text>
+                <Text className="text-slate-500 text-xs text-center">per year</Text>
               </Pressable>
-            </View>
-          </Animated.View>
-
-          {/* Price */}
-          <Animated.View entering={FadeInDown.delay(300).springify()} className="items-center mt-6">
-            <View className="flex-row items-baseline">
-              <Text className="text-4xl font-bold text-white">
-                {PRICES[selectedPeriod].price}
-              </Text>
-              <Text className="text-white/80 text-lg ml-1">
-                {PRICES[selectedPeriod].period}
-              </Text>
             </View>
           </Animated.View>
 
           {/* Features Comparison */}
-          <Animated.View entering={FadeInDown.delay(400).springify()} className="px-5 mt-8">
-            <View className="bg-white rounded-2xl p-5 shadow-lg">
-              <Text className="text-lg font-semibold text-neutral-primary mb-4">
-                What you get
+          <Animated.View entering={FadeInDown.delay(300).springify()} className="px-5 mt-6">
+            <View className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+              <Text className="text-lg font-bold text-slate-900 mb-4">
+                What's included
               </Text>
 
               {FEATURES.map((feature, index) => {
@@ -172,19 +226,19 @@ export default function PaywallScreen() {
                     key={index}
                     className={cn(
                       'flex-row items-center py-3',
-                      index < FEATURES.length - 1 && 'border-b border-neutral-divider'
+                      index < FEATURES.length - 1 && 'border-b border-slate-100'
                     )}
                   >
-                    <IconComponent size={20} color={COLORS.brandGreen} />
-                    <Text className="flex-1 ml-3 text-neutral-primary font-medium">
+                    <View className="w-8 h-8 rounded-lg bg-teal-50 items-center justify-center">
+                      <IconComponent size={18} color={COLORS.brandGreen} />
+                    </View>
+                    <Text className="flex-1 ml-3 text-slate-900 font-medium">
                       {feature.title}
                     </Text>
                     <View className="flex-row items-center">
-                      <Text className="text-neutral-secondary text-sm mr-4">
+                      <Text className="text-slate-400 text-sm w-16 text-center">
                         {typeof feature.free === 'boolean'
-                          ? feature.free
-                            ? 'Yes'
-                            : '—'
+                          ? feature.free ? '✓' : '—'
                           : feature.free}
                       </Text>
                       <View className="w-16 items-center">
@@ -192,10 +246,10 @@ export default function PaywallScreen() {
                           feature.pro ? (
                             <Check size={18} color={COLORS.safeGreen} />
                           ) : (
-                            <Text className="text-neutral-secondary">—</Text>
+                            <Text className="text-slate-400">—</Text>
                           )
                         ) : (
-                          <Text className="text-brand-green font-semibold text-sm">
+                          <Text className="text-teal-600 font-semibold text-sm">
                             {feature.pro}
                           </Text>
                         )}
@@ -205,37 +259,39 @@ export default function PaywallScreen() {
                 );
               })}
 
-              <View className="flex-row mt-4 pt-2">
+              <View className="flex-row mt-2 pt-2 border-t border-slate-100">
                 <View className="flex-1" />
-                <Text className="text-neutral-secondary text-xs mr-4">Free</Text>
-                <View className="w-16 items-center">
-                  <Text className="text-brand-green text-xs font-semibold">Pro</Text>
-                </View>
+                <Text className="text-slate-400 text-xs w-16 text-center">Free</Text>
+                <Text className="text-teal-600 text-xs font-semibold w-16 text-center">Pro</Text>
               </View>
             </View>
           </Animated.View>
 
           {/* CTA Button */}
-          <Animated.View entering={FadeInDown.delay(500).springify()} className="px-5 mt-6 mb-8">
+          <Animated.View entering={FadeInDown.delay(400).springify()} className="px-5 mt-6 mb-8">
             <Pressable
               onPress={handleSubscribe}
               disabled={isLoading}
-              className="bg-brand-green rounded-2xl py-4 flex-row items-center justify-center"
+              className="bg-teal-600 rounded-2xl py-4 flex-row items-center justify-center active:bg-teal-700"
             >
               {isLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
-                  <Sparkles size={20} color="#FFFFFF" />
-                  <Text className="text-white font-semibold text-lg ml-2">
-                    Start Pro - {PRICES[selectedPeriod].price}{PRICES[selectedPeriod].period}
+                  <Zap size={20} color="#FFFFFF" />
+                  <Text className="text-white font-bold text-lg ml-2">
+                    Start Pro — {selectedPackage?.product.priceString || (selectedPackageId === 'annual' ? annualPrice : monthlyPrice)}
                   </Text>
                 </>
               )}
             </Pressable>
 
-            <Text className="text-neutral-secondary text-center text-xs mt-3">
-              Cancel anytime. Subscription auto-renews.
+            <Text className="text-slate-400 text-center text-xs mt-3">
+              Cancel anytime • Subscription auto-renews
+            </Text>
+
+            <Text className="text-slate-400 text-center text-xs mt-2">
+              By subscribing, you agree to our Terms of Service and Privacy Policy
             </Text>
           </Animated.View>
         </ScrollView>
