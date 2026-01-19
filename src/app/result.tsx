@@ -33,6 +33,7 @@ import {
   ExternalLink,
   Search,
   X,
+  Heart,
 } from 'lucide-react-native';
 import Animated, {
   FadeInDown,
@@ -47,6 +48,7 @@ import * as Haptics from 'expo-haptics';
 import { useHistoryStore, useUserStore, useCompareStore, useShoppingListStore } from '@/lib/stores';
 import { generateIngredientExplanation } from '@/lib/services/aiExplanation';
 import { findHealthierAlternatives, type AlternativeProduct } from '@/lib/services/alternatives';
+import { getShoppingLinks, type ShopLink } from '@/lib/services/affiliateLinks';
 import { COLORS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 import { NutriscoreBadge } from '@/components/NutriscoreBadge';
@@ -223,6 +225,9 @@ export default function ResultScreen() {
   const [showNutriscoreInfo, setShowNutriscoreInfo] = useState(false);
   const [showNovaInfo, setShowNovaInfo] = useState(false);
   const [showAllergensModal, setShowAllergensModal] = useState(false);
+  const [showShopModal, setShowShopModal] = useState(false);
+  const [shopLinks, setShopLinks] = useState<ShopLink[]>([]);
+  const [selectedProductForShop, setSelectedProductForShop] = useState<{ name: string; brand?: string } | null>(null);
 
   // Fetch healthier alternatives on-demand
   const handleFindAlternatives = async () => {
@@ -250,12 +255,20 @@ export default function ResultScreen() {
     }
   };
 
-  // Handle external product search
-  const handleSearchProduct = (productName: string) => {
+  // Handle external product search - show shop options modal
+  const handleSearchProduct = (productName: string, brand?: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const searchQuery = encodeURIComponent(productName);
-    // Use Google Shopping search
-    Linking.openURL(`https://www.google.com/search?tbm=shop&q=${searchQuery}`);
+    const links = getShoppingLinks(productName, brand, product?.category);
+    setShopLinks(links);
+    setSelectedProductForShop({ name: productName, brand });
+    setShowShopModal(true);
+  };
+
+  // Open a shop link
+  const handleOpenShopLink = (url: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Linking.openURL(url);
+    setShowShopModal(false);
   };
 
   // Handle add to shopping list
@@ -820,7 +833,7 @@ export default function ResultScreen() {
                           <Text className="text-teal-600 font-semibold text-sm">View Details</Text>
                         </Pressable>
                         <Pressable
-                          onPress={() => handleSearchProduct(alt.name)}
+                          onPress={() => handleSearchProduct(alt.name, alt.brand)}
                           className="flex-1 bg-slate-100 rounded-lg py-2.5 flex-row items-center justify-center gap-2"
                         >
                           <ExternalLink size={16} color={COLORS.textSecondary} />
@@ -1066,6 +1079,68 @@ export default function ResultScreen() {
               >
                 <Text className="text-white font-semibold text-center">Close</Text>
               </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Shop Options Modal */}
+      <Modal
+        visible={showShopModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowShopModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white rounded-t-3xl">
+            <View className="p-5 border-b border-slate-100">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-lg font-bold text-slate-900">Shop This Product</Text>
+                <Pressable
+                  onPress={() => setShowShopModal(false)}
+                  className="p-2 bg-slate-100 rounded-full"
+                >
+                  <X size={18} color={COLORS.textSecondary} />
+                </Pressable>
+              </View>
+              {selectedProductForShop && (
+                <Text className="text-slate-500 text-sm mt-1" numberOfLines={1}>
+                  {selectedProductForShop.brand ? `${selectedProductForShop.brand} - ` : ''}{selectedProductForShop.name}
+                </Text>
+              )}
+            </View>
+            <View className="p-5 gap-3">
+              {shopLinks.map((link, index) => (
+                <Pressable
+                  key={link.provider}
+                  onPress={() => handleOpenShopLink(link.url)}
+                  className="flex-row items-center p-4 bg-slate-50 rounded-2xl active:bg-slate-100"
+                >
+                  <View className={`w-12 h-12 rounded-xl items-center justify-center ${
+                    link.provider === 'amazon' ? 'bg-orange-100' :
+                    link.provider === 'iherb' ? 'bg-green-100' :
+                    'bg-pink-100'
+                  }`}>
+                    {link.icon === 'shopping-cart' && <ShoppingCart size={24} color="#EA580C" />}
+                    {link.icon === 'leaf' && <Leaf size={24} color="#16A34A" />}
+                    {link.icon === 'heart' && <Heart size={24} color="#EC4899" />}
+                  </View>
+                  <View className="flex-1 ml-4">
+                    <Text className="text-slate-900 font-semibold text-base">{link.label}</Text>
+                    <Text className="text-slate-500 text-sm mt-0.5">
+                      {link.provider === 'amazon' ? 'Wide selection, fast shipping' :
+                       link.provider === 'iherb' ? 'Health & wellness products' :
+                       'Organic & natural products'}
+                    </Text>
+                  </View>
+                  <ExternalLink size={18} color={COLORS.textMuted} />
+                </Pressable>
+              ))}
+            </View>
+            <View className="px-5 pb-8">
+              <Text className="text-xs text-slate-400 text-center">
+                Prices and availability may vary by retailer
+              </Text>
             </View>
           </View>
         </View>

@@ -54,7 +54,8 @@
       "expo-video",
       "expo-web-browser",
       "react-native-edge-to-edge",
-      "expo-build-properties"
+      "expo-build-properties",
+      "expo-localization"
     ],
     "updates": {
       "url": "https://u.expo.dev/31878629-293c-4c2f-827a-64c227421088"
