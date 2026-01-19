@@ -1,10 +1,11 @@
 // AI Explanation Service - Generate comprehensive health analysis of products
 import type { NutritionData, HealthRating } from '../types';
+import { getAnthropicApiKey } from '../utils/apiConfig';
 
-const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_VIBECODE_ANTHROPIC_API_KEY;
-
-// Debug: log if key is present (not the actual key)
-console.log('[AI] Anthropic key configured:', !!ANTHROPIC_API_KEY, 'length:', ANTHROPIC_API_KEY?.length || 0);
+// Get API key at runtime to ensure we pick up all sources
+function getApiKey(): string | undefined {
+  return getAnthropicApiKey();
+}
 
 export interface AIExplanationResult {
   success: boolean;
@@ -39,10 +40,13 @@ export async function generateIngredientExplanation(
     healthRating?: HealthRating;
   }
 ): Promise<AIExplanationResult> {
-  if (!ANTHROPIC_API_KEY) {
+  const apiKey = getApiKey();
+  
+  if (!apiKey) {
+    console.warn('[AI] No Anthropic API key found');
     return {
       success: false,
-      error: 'Anthropic API key not configured. Please add it in the ENV tab.',
+      error: 'AI analysis is not available. Please try again later.',
     };
   }
 
@@ -118,7 +122,7 @@ Guidelines:
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
