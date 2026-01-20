@@ -180,19 +180,83 @@ function getCategorySearchTerms(
     { pattern: /sauce/i, searchTerm: 'sauce', categoryHint: 'condiments' },
     { pattern: /soup/i, searchTerm: 'soup', categoryHint: 'meals' },
     { pattern: /pizza/i, searchTerm: 'pizza', categoryHint: 'meals' },
-    { pattern: /frozen/i, searchTerm: 'frozen meal', categoryHint: 'frozen' },
+    { pattern: /frozen\s*(meal|dinner|pizza|entree)/i, searchTerm: 'frozen meal', categoryHint: 'frozen' },
+    { pattern: /ready\s*(to\s*eat|meal)/i, searchTerm: 'ready meal', categoryHint: 'meals' },
     
     // Spreads
     { pattern: /peanut\s*butter/i, searchTerm: 'peanut butter', categoryHint: 'spreads' },
     { pattern: /almond\s*butter/i, searchTerm: 'almond butter', categoryHint: 'spreads' },
     { pattern: /jam|jelly\b/i, searchTerm: 'jam', categoryHint: 'spreads' },
     { pattern: /nutella|hazelnut\s*spread/i, searchTerm: 'hazelnut spread', categoryHint: 'spreads' },
+    { pattern: /honey/i, searchTerm: 'honey', categoryHint: 'spreads' },
     { pattern: /hummus/i, searchTerm: 'hummus', categoryHint: 'dips' },
+    { pattern: /salsa/i, searchTerm: 'salsa', categoryHint: 'dips' },
+    { pattern: /guacamole/i, searchTerm: 'guacamole', categoryHint: 'dips' },
     
     // Canned/preserved  
-    { pattern: /canned\s*(beans|chickpeas|lentils)/i, searchTerm: 'canned legumes', categoryHint: 'canned' },
+    { pattern: /canned\s*(beans|chickpeas|lentils|corn|peas)/i, searchTerm: 'canned vegetables', categoryHint: 'canned' },
+    { pattern: /beans\s*(in|with)/i, searchTerm: 'canned beans', categoryHint: 'canned' },
+    { pattern: /chickpeas\s*(in|with)/i, searchTerm: 'canned chickpeas', categoryHint: 'canned' },
     { pattern: /beans/i, searchTerm: 'beans', categoryHint: 'canned' },
     { pattern: /chickpeas/i, searchTerm: 'chickpeas', categoryHint: 'canned' },
+    { pattern: /lentils/i, searchTerm: 'lentils', categoryHint: 'canned' },
+    
+    // Meat & Proteins
+    { pattern: /chicken\s*(breast|thigh|wing)/i, searchTerm: 'chicken', categoryHint: 'meat' },
+    { pattern: /beef|steak/i, searchTerm: 'beef', categoryHint: 'meat' },
+    { pattern: /pork|bacon|ham/i, searchTerm: 'pork', categoryHint: 'meat' },
+    { pattern: /turkey/i, searchTerm: 'turkey', categoryHint: 'meat' },
+    { pattern: /sausage/i, searchTerm: 'sausage', categoryHint: 'meat' },
+    { pattern: /deli\s*(meat|slice)/i, searchTerm: 'deli meat', categoryHint: 'meat' },
+    
+    // Seafood
+    { pattern: /salmon/i, searchTerm: 'salmon', categoryHint: 'seafood' },
+    { pattern: /tuna/i, searchTerm: 'tuna', categoryHint: 'seafood' },
+    { pattern: /shrimp|prawn/i, searchTerm: 'shrimp', categoryHint: 'seafood' },
+    { pattern: /fish\s*(fillet|stick)/i, searchTerm: 'fish', categoryHint: 'seafood' },
+    { pattern: /sardine/i, searchTerm: 'sardines', categoryHint: 'seafood' },
+    
+    // Pet Food
+    { pattern: /dog\s*food|puppy\s*food/i, searchTerm: 'dog food', categoryHint: 'petfood' },
+    { pattern: /cat\s*food|kitten\s*food/i, searchTerm: 'cat food', categoryHint: 'petfood' },
+    { pattern: /dog\s*(treat|snack|biscuit)/i, searchTerm: 'dog treats', categoryHint: 'petfood' },
+    { pattern: /cat\s*(treat|snack)/i, searchTerm: 'cat treats', categoryHint: 'petfood' },
+    { pattern: /pet\s*food/i, searchTerm: 'pet food', categoryHint: 'petfood' },
+    { pattern: /kibble/i, searchTerm: 'dry pet food', categoryHint: 'petfood' },
+    
+    // Cleaning Products
+    { pattern: /dish\s*(wash|soap|detergent|liquid)/i, searchTerm: 'dish soap', categoryHint: 'cleaning' },
+    { pattern: /laundry\s*(detergent|soap|pod)/i, searchTerm: 'laundry detergent', categoryHint: 'cleaning' },
+    { pattern: /all[\s-]*purpose\s*clean/i, searchTerm: 'all purpose cleaner', categoryHint: 'cleaning' },
+    { pattern: /surface\s*clean/i, searchTerm: 'surface cleaner', categoryHint: 'cleaning' },
+    { pattern: /glass\s*clean/i, searchTerm: 'glass cleaner', categoryHint: 'cleaning' },
+    { pattern: /bathroom\s*clean/i, searchTerm: 'bathroom cleaner', categoryHint: 'cleaning' },
+    { pattern: /floor\s*clean/i, searchTerm: 'floor cleaner', categoryHint: 'cleaning' },
+    { pattern: /bleach/i, searchTerm: 'bleach', categoryHint: 'cleaning' },
+    { pattern: /disinfect/i, searchTerm: 'disinfectant', categoryHint: 'cleaning' },
+    { pattern: /hand\s*sanitiz/i, searchTerm: 'hand sanitizer', categoryHint: 'cleaning' },
+    
+    // Personal Care / Cosmetics
+    { pattern: /shampoo/i, searchTerm: 'shampoo', categoryHint: 'cosmetics' },
+    { pattern: /conditioner/i, searchTerm: 'conditioner', categoryHint: 'cosmetics' },
+    { pattern: /body\s*(wash|lotion|cream)/i, searchTerm: 'body wash', categoryHint: 'cosmetics' },
+    { pattern: /face\s*(wash|cream|moisturiz)/i, searchTerm: 'face wash', categoryHint: 'cosmetics' },
+    { pattern: /moisturiz/i, searchTerm: 'moisturizer', categoryHint: 'cosmetics' },
+    { pattern: /sunscreen|spf|sun\s*block/i, searchTerm: 'sunscreen', categoryHint: 'cosmetics' },
+    { pattern: /lotion/i, searchTerm: 'lotion', categoryHint: 'cosmetics' },
+    { pattern: /deodorant|antiperspirant/i, searchTerm: 'deodorant', categoryHint: 'cosmetics' },
+    { pattern: /toothpaste/i, searchTerm: 'toothpaste', categoryHint: 'cosmetics' },
+    { pattern: /mouthwash/i, searchTerm: 'mouthwash', categoryHint: 'cosmetics' },
+    { pattern: /soap\s*bar|bar\s*soap|hand\s*soap/i, searchTerm: 'soap', categoryHint: 'cosmetics' },
+    { pattern: /lip\s*(balm|stick|gloss)/i, searchTerm: 'lip balm', categoryHint: 'cosmetics' },
+    { pattern: /mascara/i, searchTerm: 'mascara', categoryHint: 'cosmetics' },
+    { pattern: /foundation|concealer/i, searchTerm: 'foundation', categoryHint: 'cosmetics' },
+    
+    // Baby Products
+    { pattern: /baby\s*food|baby\s*puree/i, searchTerm: 'baby food', categoryHint: 'baby' },
+    { pattern: /baby\s*formula|infant\s*formula/i, searchTerm: 'baby formula', categoryHint: 'baby' },
+    { pattern: /diaper|nappy/i, searchTerm: 'diapers', categoryHint: 'baby' },
+    { pattern: /baby\s*(wipe|lotion|shampoo|wash)/i, searchTerm: 'baby care', categoryHint: 'baby' },
   ];
 
   let matchedCategoryHint: string | undefined;
@@ -252,6 +316,133 @@ function getCategorySearchTerms(
   };
 }
 
+// Category validation - ensure alternatives match the original product type
+// Maps category hints to required/excluded patterns for relevance checking
+const CATEGORY_VALIDATION: Record<string, { 
+  required?: RegExp;      // Product name or categories MUST match one of these
+  requiredCategories?: RegExp; // OFF categories field must match
+  excluded?: RegExp;      // Product name must NOT match these
+}> = {
+  // Beverages
+  beverages: {
+    required: /beverage|drink|juice|water|soda|tea|coffee|smoothie|lemonade|cola|pop|energy|sports|shake|milk(?!.*cheese)|nectar/i,
+    requiredCategories: /beverages|drinks|juices|waters|sodas|teas|coffees|energy-drinks|soft-drinks/i,
+    excluded: /beans?\s*(in|with)|chickpeas?|lentils?|vegetables?\s*(in|with)|tuna|sardines?|canned\s*(beans|vegetables|fish)|soap|shampoo|lotion|detergent/i,
+  },
+  
+  // Breakfast & Cereals
+  breakfast: {
+    required: /cereal|granola|muesli|oat|porridge|breakfast|flakes/i,
+    requiredCategories: /cereals|breakfast|granolas|mueslis/i,
+    excluded: /soap|shampoo|lotion|detergent|drink|beverage|cleaning/i,
+  },
+  
+  // Snacks
+  snacks: {
+    required: /bar|chip|crisp|snack|cookie|biscuit|cracker|pretzel|popcorn|nut|trail\s*mix|candy|chocolate|gummy|sweet/i,
+    requiredCategories: /snacks|biscuits|cookies|chips|crackers|confectionery|candy|chocolate/i,
+    excluded: /soap|shampoo|lotion|detergent|canned|in\s*water|cleaning|pet\s*food/i,
+  },
+  
+  // Dairy
+  dairy: {
+    required: /milk|yogurt|yoghurt|cheese|butter|cream|dairy|kefir|fromage/i,
+    requiredCategories: /dairy|milk|cheese|yogurt|butter|cream/i,
+    excluded: /soap|shampoo|lotion|detergent|cleaning|pet\s*food|plant-based\s*milk/i,
+  },
+  
+  // Bakery
+  bakery: {
+    required: /bread|bagel|muffin|croissant|pastry|bun|roll|toast|cake|donut|doughnut/i,
+    requiredCategories: /bakery|bread|pastries|cakes/i,
+    excluded: /soap|shampoo|lotion|detergent|cleaning|pet\s*food/i,
+  },
+  
+  // Prepared meals
+  meals: {
+    required: /meal|pasta|pizza|soup|stew|curry|dish|dinner|lunch|entree|ready\s*to\s*eat|frozen\s*meal/i,
+    requiredCategories: /meals|pasta|pizzas|soups|ready-made|frozen/i,
+    excluded: /soap|shampoo|lotion|detergent|cleaning|pet\s*food|beverage|drink/i,
+  },
+  
+  // Condiments & Sauces
+  condiments: {
+    required: /sauce|ketchup|mustard|mayo|dressing|condiment|vinegar|oil|marinade/i,
+    requiredCategories: /sauces|condiments|dressings|oils|vinegars/i,
+    excluded: /soap|shampoo|lotion|detergent|cleaning|pet\s*food/i,
+  },
+  
+  // Spreads
+  spreads: {
+    required: /butter|spread|jam|jelly|marmalade|honey|nutella|hazelnut|peanut\s*butter|almond\s*butter/i,
+    requiredCategories: /spreads|jams|honeys|nut-butters/i,
+    excluded: /soap|shampoo|lotion|detergent|cleaning|pet\s*food/i,
+  },
+  
+  // Dips
+  dips: {
+    required: /hummus|dip|salsa|guacamole|tzatziki|tapenade/i,
+    requiredCategories: /dips|hummus|salsas/i,
+    excluded: /soap|shampoo|lotion|detergent|cleaning|pet\s*food/i,
+  },
+  
+  // Canned/Preserved foods
+  canned: {
+    required: /canned|beans|chickpeas|lentils|corn|peas|tomato|preserved|in\s*(water|brine|oil)/i,
+    requiredCategories: /canned|preserved|legumes|beans/i,
+    excluded: /soap|shampoo|lotion|detergent|cleaning|pet\s*food|beverage|drink|fresh/i,
+  },
+  
+  // Frozen foods
+  frozen: {
+    required: /frozen|ice\s*cream|gelato|sorbet|popsicle|frozen\s*(meal|pizza|vegetable|fruit)/i,
+    requiredCategories: /frozen|ice-cream|gelato/i,
+    excluded: /soap|shampoo|lotion|detergent|cleaning|pet\s*food/i,
+  },
+  
+  // Meat & Proteins
+  meat: {
+    required: /meat|chicken|beef|pork|turkey|lamb|sausage|bacon|ham|deli|protein/i,
+    requiredCategories: /meats|poultry|proteins|deli/i,
+    excluded: /soap|shampoo|lotion|detergent|cleaning|pet\s*food|plant-based/i,
+  },
+  
+  // Seafood
+  seafood: {
+    required: /fish|salmon|tuna|shrimp|seafood|crab|lobster|sardine|anchov/i,
+    requiredCategories: /seafood|fish|shellfish/i,
+    excluded: /soap|shampoo|lotion|detergent|cleaning|pet\s*food|cat\s*food|dog\s*food/i,
+  },
+  
+  // Pet Food
+  petfood: {
+    required: /pet\s*food|dog\s*food|cat\s*food|kibble|pet\s*treat|dog\s*treat|cat\s*treat/i,
+    requiredCategories: /pet-food|dog-food|cat-food|pet-treats/i,
+    excluded: /human|baby\s*food/i,
+  },
+  
+  // Cleaning Products
+  cleaning: {
+    required: /clean|detergent|soap|dish\s*wash|laundry|bleach|disinfect|sanitiz|all-purpose|surface/i,
+    requiredCategories: /cleaning|detergents|household/i,
+    excluded: /food|edible|drink|beverage|snack/i,
+  },
+  
+  // Personal Care / Cosmetics
+  cosmetics: {
+    required: /shampoo|conditioner|lotion|cream|moisturiz|soap|body\s*wash|face\s*wash|skincare|makeup|cosmetic|lipstick|mascara|foundation|sunscreen/i,
+    requiredCategories: /cosmetics|personal-care|skincare|haircare|beauty/i,
+    excluded: /food|edible|drink|beverage|snack|cleaning|detergent/i,
+  },
+  
+  // Baby Products
+  baby: {
+    required: /baby|infant|toddler|formula|diaper|nappy|baby\s*food|puree/i,
+    requiredCategories: /baby|infant|toddler/i,
+    excluded: /pet\s*food|adult|cleaning\s*product/i,
+  },
+};
+
 // Check if a product name/category seems to match our expected category
 function isRelevantProduct(
   product: OFFProduct,
@@ -262,44 +453,29 @@ function isRelevantProduct(
   
   const productName = (product.product_name || '').toLowerCase();
   const productCategories = (product.categories || '').toLowerCase();
+  const combinedText = `${productName} ${productCategories}`;
   
-  // Exclusion patterns - products that should NEVER match certain categories
-  const exclusions: Record<string, RegExp[]> = {
-    beverages: [
-      /beans?\s*(in|with)/i,
-      /chickpeas?\s*(in|with)/i,
-      /lentils?\s*(in|with)/i,
-      /peas?\s*(in|with)/i,
-      /vegetables?\s*(in|with)/i,
-      /tuna\s*(in|with)/i,
-      /sardines?\s*(in|with)/i,
-      /fish\s*(in|with)/i,
-      /canned\s*(beans|vegetables|fish)/i,
-    ],
-    snacks: [
-      /beans?\s*(in|with)/i,
-      /canned/i,
-    ],
-  };
+  const validation = CATEGORY_VALIDATION[originalCategoryHint];
+  if (!validation) return true; // Unknown category, accept all
   
-  // Check exclusions
-  const categoryExclusions = exclusions[originalCategoryHint];
-  if (categoryExclusions) {
-    for (const pattern of categoryExclusions) {
-      if (pattern.test(productName)) {
-        return false;
-      }
-    }
+  // Check exclusions first - if product matches excluded patterns, reject
+  if (validation.excluded && validation.excluded.test(productName)) {
+    return false;
   }
   
-  // For beverages, make sure it's actually a drink
-  if (originalCategoryHint === 'beverages') {
-    const drinkPatterns = /beverage|drink|juice|water|soda|tea|coffee|smoothie|lemonade/i;
-    const drinkCategories = /beverages|drinks|juices|waters|sodas|teas|coffees/i;
-    
-    if (!drinkPatterns.test(productName) && !drinkCategories.test(productCategories)) {
+  // Check if product matches required patterns (either in name OR categories)
+  const matchesNamePattern = validation.required ? validation.required.test(productName) : true;
+  const matchesCategoryPattern = validation.requiredCategories ? validation.requiredCategories.test(productCategories) : true;
+  
+  // Must match at least one of the required patterns
+  if (validation.required && validation.requiredCategories) {
+    if (!matchesNamePattern && !matchesCategoryPattern) {
       return false;
     }
+  } else if (validation.required && !matchesNamePattern) {
+    return false;
+  } else if (validation.requiredCategories && !matchesCategoryPattern) {
+    return false;
   }
   
   return true;
