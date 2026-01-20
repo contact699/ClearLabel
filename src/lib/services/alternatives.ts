@@ -105,71 +105,113 @@ function getCategorySearchTerms(
   const nameLower = productName.toLowerCase();
   
   // Product type mapping - more specific to find similar products
-  const productTypes: { pattern: RegExp; searchTerm: string }[] = [
-    // Bars
-    { pattern: /granola\s*bar/i, searchTerm: 'granola bar' },
-    { pattern: /protein\s*bar/i, searchTerm: 'protein bar' },
-    { pattern: /energy\s*bar/i, searchTerm: 'energy bar' },
-    { pattern: /cereal\s*bar/i, searchTerm: 'cereal bar' },
-    { pattern: /snack\s*bar/i, searchTerm: 'snack bar' },
-    { pattern: /nutrition\s*bar/i, searchTerm: 'nutrition bar' },
-    { pattern: /oat\s*bar/i, searchTerm: 'oat bar' },
+  // Order matters - more specific patterns should come first
+  const productTypes: { pattern: RegExp; searchTerm: string; categoryHint?: string }[] = [
+    // Bars (specific first)
+    { pattern: /granola\s*bar/i, searchTerm: 'granola bar', categoryHint: 'snacks' },
+    { pattern: /protein\s*bar/i, searchTerm: 'protein bar', categoryHint: 'snacks' },
+    { pattern: /energy\s*bar/i, searchTerm: 'energy bar', categoryHint: 'snacks' },
+    { pattern: /cereal\s*bar/i, searchTerm: 'cereal bar', categoryHint: 'snacks' },
+    { pattern: /snack\s*bar/i, searchTerm: 'snack bar', categoryHint: 'snacks' },
+    { pattern: /nutrition\s*bar/i, searchTerm: 'nutrition bar', categoryHint: 'snacks' },
+    { pattern: /oat\s*bar/i, searchTerm: 'oat bar', categoryHint: 'snacks' },
+    { pattern: /fruit\s*bar/i, searchTerm: 'fruit bar', categoryHint: 'snacks' },
+    
+    // Beverages - specific patterns BEFORE generic water/juice
+    { pattern: /enhanced\s*water|vitamin\s*water|nutrient\s*water/i, searchTerm: 'enhanced water', categoryHint: 'beverages' },
+    { pattern: /flavou?red\s*water|infused\s*water/i, searchTerm: 'flavored water', categoryHint: 'beverages' },
+    { pattern: /sparkling\s*water|carbonated\s*water|seltzer/i, searchTerm: 'sparkling water', categoryHint: 'beverages' },
+    { pattern: /coconut\s*water/i, searchTerm: 'coconut water', categoryHint: 'beverages' },
+    { pattern: /sports?\s*drink|electrolyte/i, searchTerm: 'sports drink', categoryHint: 'beverages' },
+    { pattern: /energy\s*drink/i, searchTerm: 'energy drink', categoryHint: 'beverages' },
+    { pattern: /protein\s*(shake|drink)/i, searchTerm: 'protein shake', categoryHint: 'beverages' },
+    { pattern: /smoothie/i, searchTerm: 'smoothie', categoryHint: 'beverages' },
+    { pattern: /lemonade/i, searchTerm: 'lemonade', categoryHint: 'beverages' },
+    { pattern: /iced\s*tea|ice\s*tea/i, searchTerm: 'iced tea', categoryHint: 'beverages' },
+    { pattern: /fruit\s*(punch|drink)|fruit\s*juice\s*drink/i, searchTerm: 'fruit drink', categoryHint: 'beverages' },
+    { pattern: /orange\s*juice/i, searchTerm: 'orange juice', categoryHint: 'beverages' },
+    { pattern: /apple\s*juice/i, searchTerm: 'apple juice', categoryHint: 'beverages' },
+    { pattern: /grape\s*juice/i, searchTerm: 'grape juice', categoryHint: 'beverages' },
+    { pattern: /cranberry/i, searchTerm: 'cranberry juice', categoryHint: 'beverages' },
+    { pattern: /juice/i, searchTerm: 'fruit juice', categoryHint: 'beverages' },
+    { pattern: /soda|cola|pop\b/i, searchTerm: 'soft drink', categoryHint: 'beverages' },
+    { pattern: /tea\b/i, searchTerm: 'tea', categoryHint: 'beverages' },
+    { pattern: /coffee/i, searchTerm: 'coffee', categoryHint: 'beverages' },
+    // Generic water LAST and only if it seems like just water (not "in water")
+    { pattern: /\bwater\b(?!\s+beverage|\s+drink)/i, searchTerm: 'bottled water', categoryHint: 'beverages' },
+    
     // Cereals & Breakfast
-    { pattern: /granola/i, searchTerm: 'granola' },
-    { pattern: /muesli/i, searchTerm: 'muesli' },
-    { pattern: /oatmeal|porridge/i, searchTerm: 'oatmeal' },
-    { pattern: /cereal/i, searchTerm: 'breakfast cereal' },
-    { pattern: /cornflakes/i, searchTerm: 'cornflakes' },
+    { pattern: /granola(?!\s*bar)/i, searchTerm: 'granola', categoryHint: 'breakfast' },
+    { pattern: /muesli/i, searchTerm: 'muesli', categoryHint: 'breakfast' },
+    { pattern: /oatmeal|porridge/i, searchTerm: 'oatmeal', categoryHint: 'breakfast' },
+    { pattern: /cereal/i, searchTerm: 'breakfast cereal', categoryHint: 'breakfast' },
+    { pattern: /cornflakes/i, searchTerm: 'cornflakes', categoryHint: 'breakfast' },
+    
     // Snacks
-    { pattern: /chips|crisps/i, searchTerm: 'chips' },
-    { pattern: /popcorn/i, searchTerm: 'popcorn' },
-    { pattern: /pretzel/i, searchTerm: 'pretzels' },
-    { pattern: /crackers/i, searchTerm: 'crackers' },
-    { pattern: /nuts|almonds|cashews|peanuts/i, searchTerm: 'nuts' },
-    { pattern: /trail\s*mix/i, searchTerm: 'trail mix' },
+    { pattern: /chips|crisps/i, searchTerm: 'chips', categoryHint: 'snacks' },
+    { pattern: /popcorn/i, searchTerm: 'popcorn', categoryHint: 'snacks' },
+    { pattern: /pretzel/i, searchTerm: 'pretzels', categoryHint: 'snacks' },
+    { pattern: /crackers/i, searchTerm: 'crackers', categoryHint: 'snacks' },
+    { pattern: /nuts|almonds|cashews|peanuts/i, searchTerm: 'nuts', categoryHint: 'snacks' },
+    { pattern: /trail\s*mix/i, searchTerm: 'trail mix', categoryHint: 'snacks' },
+    
     // Dairy
-    { pattern: /yogurt|yoghurt/i, searchTerm: 'yogurt' },
-    { pattern: /greek\s*yogurt/i, searchTerm: 'greek yogurt' },
-    { pattern: /milk/i, searchTerm: 'milk' },
-    { pattern: /cheese/i, searchTerm: 'cheese' },
-    { pattern: /butter/i, searchTerm: 'butter' },
-    { pattern: /cream/i, searchTerm: 'cream' },
-    // Drinks
-    { pattern: /juice/i, searchTerm: 'juice' },
-    { pattern: /soda|cola|pop/i, searchTerm: 'soft drink' },
-    { pattern: /smoothie/i, searchTerm: 'smoothie' },
-    { pattern: /tea/i, searchTerm: 'tea' },
-    { pattern: /coffee/i, searchTerm: 'coffee' },
-    { pattern: /water/i, searchTerm: 'water' },
-    { pattern: /energy\s*drink/i, searchTerm: 'energy drink' },
-    { pattern: /sports\s*drink/i, searchTerm: 'sports drink' },
+    { pattern: /greek\s*yogu?rt/i, searchTerm: 'greek yogurt', categoryHint: 'dairy' },
+    { pattern: /yogu?rt/i, searchTerm: 'yogurt', categoryHint: 'dairy' },
+    { pattern: /milk/i, searchTerm: 'milk', categoryHint: 'dairy' },
+    { pattern: /cheese/i, searchTerm: 'cheese', categoryHint: 'dairy' },
+    { pattern: /butter/i, searchTerm: 'butter', categoryHint: 'dairy' },
+    { pattern: /cream/i, searchTerm: 'cream', categoryHint: 'dairy' },
+    
     // Sweet snacks
-    { pattern: /cookie|biscuit/i, searchTerm: 'cookies' },
-    { pattern: /chocolate/i, searchTerm: 'chocolate' },
-    { pattern: /candy|sweets/i, searchTerm: 'candy' },
-    { pattern: /ice\s*cream/i, searchTerm: 'ice cream' },
-    { pattern: /cake/i, searchTerm: 'cake' },
+    { pattern: /cookie|biscuit/i, searchTerm: 'cookies', categoryHint: 'snacks' },
+    { pattern: /chocolate/i, searchTerm: 'chocolate', categoryHint: 'snacks' },
+    { pattern: /candy|sweets|gummy|gummies/i, searchTerm: 'candy', categoryHint: 'snacks' },
+    { pattern: /ice\s*cream/i, searchTerm: 'ice cream', categoryHint: 'frozen' },
+    { pattern: /cake/i, searchTerm: 'cake', categoryHint: 'bakery' },
+    
     // Bread & Bakery
-    { pattern: /bread/i, searchTerm: 'bread' },
-    { pattern: /bagel/i, searchTerm: 'bagels' },
-    { pattern: /muffin/i, searchTerm: 'muffins' },
+    { pattern: /bread/i, searchTerm: 'bread', categoryHint: 'bakery' },
+    { pattern: /bagel/i, searchTerm: 'bagels', categoryHint: 'bakery' },
+    { pattern: /muffin/i, searchTerm: 'muffins', categoryHint: 'bakery' },
+    
     // Prepared foods
-    { pattern: /pasta/i, searchTerm: 'pasta' },
-    { pattern: /sauce/i, searchTerm: 'sauce' },
-    { pattern: /soup/i, searchTerm: 'soup' },
-    { pattern: /pizza/i, searchTerm: 'pizza' },
-    { pattern: /frozen/i, searchTerm: 'frozen meal' },
+    { pattern: /pasta/i, searchTerm: 'pasta', categoryHint: 'meals' },
+    { pattern: /sauce/i, searchTerm: 'sauce', categoryHint: 'condiments' },
+    { pattern: /soup/i, searchTerm: 'soup', categoryHint: 'meals' },
+    { pattern: /pizza/i, searchTerm: 'pizza', categoryHint: 'meals' },
+    { pattern: /frozen/i, searchTerm: 'frozen meal', categoryHint: 'frozen' },
+    
     // Spreads
-    { pattern: /peanut\s*butter/i, searchTerm: 'peanut butter' },
-    { pattern: /jam|jelly/i, searchTerm: 'jam' },
-    { pattern: /nutella|hazelnut\s*spread/i, searchTerm: 'hazelnut spread' },
+    { pattern: /peanut\s*butter/i, searchTerm: 'peanut butter', categoryHint: 'spreads' },
+    { pattern: /almond\s*butter/i, searchTerm: 'almond butter', categoryHint: 'spreads' },
+    { pattern: /jam|jelly\b/i, searchTerm: 'jam', categoryHint: 'spreads' },
+    { pattern: /nutella|hazelnut\s*spread/i, searchTerm: 'hazelnut spread', categoryHint: 'spreads' },
+    { pattern: /hummus/i, searchTerm: 'hummus', categoryHint: 'dips' },
+    
+    // Canned/preserved  
+    { pattern: /canned\s*(beans|chickpeas|lentils)/i, searchTerm: 'canned legumes', categoryHint: 'canned' },
+    { pattern: /beans/i, searchTerm: 'beans', categoryHint: 'canned' },
+    { pattern: /chickpeas/i, searchTerm: 'chickpeas', categoryHint: 'canned' },
   ];
 
+  let matchedCategoryHint: string | undefined;
+  
   // Find matching product types from name
-  for (const { pattern, searchTerm } of productTypes) {
+  for (const { pattern, searchTerm, categoryHint } of productTypes) {
     if (pattern.test(nameLower)) {
       terms.push(searchTerm);
+      if (!matchedCategoryHint && categoryHint) {
+        matchedCategoryHint = categoryHint;
+      }
+      break; // Take only the first (most specific) match
     }
+  }
+  
+  // Special handling for "beverage" or "drink" in name - treat as flavored drink
+  if (terms.length === 0 && /beverage|drink/i.test(nameLower)) {
+    terms.push('flavored drink');
+    matchedCategoryHint = 'beverages';
   }
   
   // Extract from categories if available and no direct matches
@@ -204,7 +246,63 @@ function getCategorySearchTerms(
     }
   }
   
-  return [...new Set(terms)].slice(0, 3);
+  return { 
+    terms: [...new Set(terms)].slice(0, 3),
+    categoryHint: matchedCategoryHint 
+  };
+}
+
+// Check if a product name/category seems to match our expected category
+function isRelevantProduct(
+  product: OFFProduct,
+  originalCategoryHint?: string,
+  originalName?: string
+): boolean {
+  if (!originalCategoryHint) return true; // No hint, accept all
+  
+  const productName = (product.product_name || '').toLowerCase();
+  const productCategories = (product.categories || '').toLowerCase();
+  
+  // Exclusion patterns - products that should NEVER match certain categories
+  const exclusions: Record<string, RegExp[]> = {
+    beverages: [
+      /beans?\s*(in|with)/i,
+      /chickpeas?\s*(in|with)/i,
+      /lentils?\s*(in|with)/i,
+      /peas?\s*(in|with)/i,
+      /vegetables?\s*(in|with)/i,
+      /tuna\s*(in|with)/i,
+      /sardines?\s*(in|with)/i,
+      /fish\s*(in|with)/i,
+      /canned\s*(beans|vegetables|fish)/i,
+    ],
+    snacks: [
+      /beans?\s*(in|with)/i,
+      /canned/i,
+    ],
+  };
+  
+  // Check exclusions
+  const categoryExclusions = exclusions[originalCategoryHint];
+  if (categoryExclusions) {
+    for (const pattern of categoryExclusions) {
+      if (pattern.test(productName)) {
+        return false;
+      }
+    }
+  }
+  
+  // For beverages, make sure it's actually a drink
+  if (originalCategoryHint === 'beverages') {
+    const drinkPatterns = /beverage|drink|juice|water|soda|tea|coffee|smoothie|lemonade/i;
+    const drinkCategories = /beverages|drinks|juices|waters|sodas|teas|coffees/i;
+    
+    if (!drinkPatterns.test(productName) && !drinkCategories.test(productCategories)) {
+      return false;
+    }
+  }
+  
+  return true;
 }
 
 // Search OpenFoodFacts for similar products
@@ -261,19 +359,20 @@ export async function findHealthierAlternatives(
   console.log('[Alternatives] Finding alternatives for:', productName);
   
   // Get search terms from product
-  const searchTerms = getCategorySearchTerms(productName, productCategories);
+  const { terms: searchTerms, categoryHint } = getCategorySearchTerms(productName, productCategories);
   
-  if (searchTerms.length === 0) {
+  let finalSearchTerms = searchTerms;
+  if (finalSearchTerms.length === 0) {
     // Fallback: use first two words of product name
     const words = productName.split(' ').slice(0, 2);
     if (words.length > 0) {
-      searchTerms.push(words.join(' '));
+      finalSearchTerms = [words.join(' ')];
     }
   }
   
-  console.log('[Alternatives] Search terms:', searchTerms);
+  console.log('[Alternatives] Search terms:', finalSearchTerms, 'Category hint:', categoryHint);
   
-  if (searchTerms.length === 0) {
+  if (finalSearchTerms.length === 0) {
     return [];
   }
 
@@ -302,7 +401,7 @@ export async function findHealthierAlternatives(
 
   // Search for products with each term
   const allProducts: OFFProduct[] = [];
-  for (const term of searchTerms.slice(0, 2)) {
+  for (const term of finalSearchTerms.slice(0, 2)) {
     const products = await searchProducts(term, category);
     allProducts.push(...products);
   }
@@ -318,6 +417,12 @@ export async function findHealthierAlternatives(
 
     const name = getDisplayName(product);
     if (!name || name === 'Unknown Product') continue;
+    
+    // Check if product is actually relevant (same category)
+    if (!isRelevantProduct(product, categoryHint, productName)) {
+      console.log('[Alternatives] Skipping irrelevant product:', name);
+      continue;
+    }
 
     const healthScore = calculateHealthScore(product);
     
