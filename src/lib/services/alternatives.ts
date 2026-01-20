@@ -494,6 +494,7 @@ async function searchProducts(
       : 'https://world.openfoodfacts.org';
     
     // Search for products with good nutriscore (A or B)
+    // Request specific fields including images
     const searchUrl = `${baseUrl}/cgi/search.pl?` + new URLSearchParams({
       search_terms: searchTerm,
       search_simple: '1',
@@ -502,7 +503,11 @@ async function searchProducts(
       page_size: '20',
       // Sort by nutriscore
       sort_by: 'nutriscore_score',
+      // Request all needed fields including images
+      fields: 'code,product_name,product_name_en,brands,image_url,image_front_url,image_front_small_url,image_small_url,nutriscore_grade,nutrition_grades,nova_group,additives_tags,categories',
     }).toString();
+    
+    console.log('[Alternatives] Search URL:', searchUrl);
 
     const response = await fetchWithRetry(searchUrl, {
       headers: { 'User-Agent': USER_AGENT },
@@ -516,6 +521,7 @@ async function searchProducts(
     }
 
     const data: SearchResult = await response.json();
+    console.log('[Alternatives] Search returned', data.products?.length || 0, 'products');
     return data.products || [];
   } catch (error) {
     console.error('[Alternatives] Search error:', error);
