@@ -265,11 +265,29 @@ export default function ResultScreen() {
       
       // Parse product data
       const ingredientsText = getIngredientsText(offProduct);
-      const ingredients = analyzeProduct(ingredientsText, []);
       const nutriscoreGrade = getNutriscoreGrade(offProduct);
       const novaScore = offProduct.nova_group;
       const additives = getCleanedAdditives(offProduct);
       const allergens = getCleanedAllergens(offProduct);
+      
+      // Determine vegan/vegetarian status
+      const veganStatus = offProduct.ingredients_analysis_tags?.includes('en:vegan') ? 'yes' as const :
+                          offProduct.ingredients_analysis_tags?.includes('en:non-vegan') ? 'no' as const : 'unknown' as const;
+      const vegetarianStatus = offProduct.ingredients_analysis_tags?.includes('en:vegetarian') ? 'yes' as const :
+                               offProduct.ingredients_analysis_tags?.includes('en:non-vegetarian') ? 'no' as const : 'unknown' as const;
+      
+      // Get active user flags
+      const activeFlags = userFlags.filter(f => f.isActive);
+      
+      // Analyze ingredients
+      const analysisResult = analyzeProduct(
+        ingredientsText,
+        allergens,
+        additives,
+        veganStatus,
+        vegetarianStatus,
+        activeFlags
+      );
       const healthRating = calculateHealthRating(nutriscoreGrade, novaScore, additives.length);
       
       const scannedProduct: ScannedProduct = {
@@ -278,7 +296,7 @@ export default function ResultScreen() {
         name: getDisplayName(offProduct),
         brand: offProduct.brands || undefined,
         imageUrl: offProduct.image_front_url || offProduct.image_url,
-        ingredients,
+        ingredients: analysisResult.parsedIngredients,
         ingredientsText,
         allergens,
         additives,
@@ -289,10 +307,8 @@ export default function ResultScreen() {
         category: product?.category || 'food',
         dataSource: 'api' as DataSource,
         scannedAt: new Date().toISOString(),
-        veganStatus: offProduct.ingredients_analysis_tags?.includes('en:vegan') ? 'yes' :
-                     offProduct.ingredients_analysis_tags?.includes('en:non-vegan') ? 'no' : 'unknown',
-        vegetarianStatus: offProduct.ingredients_analysis_tags?.includes('en:vegetarian') ? 'yes' :
-                          offProduct.ingredients_analysis_tags?.includes('en:non-vegetarian') ? 'no' : 'unknown',
+        veganStatus,
+        vegetarianStatus,
         rawCategories: offProduct.categories,
       };
       
