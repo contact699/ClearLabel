@@ -243,19 +243,25 @@ export default function ResultScreen() {
       // Check if already in history
       const existingProduct = products.find((p) => p.barcode === barcode);
       if (existingProduct) {
+        setIsLoadingAltDetails(null);
         router.push(`/result?id=${existingProduct.id}`);
         return;
       }
       
+      console.log('[ViewDetails] Fetching product:', barcode);
+      
       // Fetch product from API
       const result = await fetchProductByBarcode(barcode);
       
+      console.log('[ViewDetails] Result:', result ? 'found' : 'null');
+      
       if (!result || !result.product) {
-        Alert.alert('Product Not Found', 'Could not load details for this product.');
+        Alert.alert('Product Not Found', `Could not load details for "${productName}". The product may not be in the database.`);
         return;
       }
       
       const offProduct = result.product;
+      console.log('[ViewDetails] Product name:', offProduct.product_name);
       
       // Parse product data
       const ingredientsText = getIngredientsText(offProduct);
@@ -294,8 +300,12 @@ export default function ResultScreen() {
       useHistoryStore.getState().addProduct(scannedProduct);
       router.push(`/result?id=${scannedProduct.id}`);
     } catch (error) {
-      console.error('Failed to fetch alternative details:', error);
-      Alert.alert('Error', 'Failed to load product details. Please try again.');
+      console.error('[ViewDetails] Failed to fetch alternative details:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      Alert.alert(
+        'Error Loading Product', 
+        `Could not load details for "${productName}". ${errorMessage}\n\nPlease try again.`
+      );
     } finally {
       setIsLoadingAltDetails(null);
     }

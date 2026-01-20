@@ -1,5 +1,6 @@
 // Open Food Facts API Service
 import { API_URLS } from '../constants';
+import { fetchWithRetry } from '../utils/network';
 import type { OFFResponse, OFFProduct, DataSource, NutritionData, HealthRating } from '../types';
 
 const USER_AGENT = 'IngredientDecoder - React Native App';
@@ -36,29 +37,37 @@ async function fetchFromDatabase(
 ): Promise<FetchResult | null> {
   try {
     const url = `${baseURL}/product/${barcode}.json`;
+    
+    console.log(`[OpenFoodFacts] Fetching from ${source}:`, url);
 
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       headers: {
         'User-Agent': USER_AGENT,
       },
+      timeout: 15000,
+      retries: 2,
     });
 
     if (!response.ok) {
+      console.log(`[OpenFoodFacts] ${source} returned status:`, response.status);
       return null;
     }
 
     const data: OFFResponse = await response.json();
 
     if (data.status !== 1 || !data.product) {
+      console.log(`[OpenFoodFacts] ${source} product not found, status:`, data.status);
       return null;
     }
+    
+    console.log(`[OpenFoodFacts] ${source} found product:`, data.product.product_name);
 
     return {
       product: data.product,
       source,
     };
   } catch (error) {
-    console.error(`Error fetching from ${source}:`, error);
+    console.error(`[OpenFoodFacts] Error fetching from ${source}:`, error);
     return null;
   }
 }
