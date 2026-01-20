@@ -45,14 +45,18 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { v4 as uuidv4 } from 'uuid';
 import { useHistoryStore, useUserStore, useCompareStore, useShoppingListStore } from '@/lib/stores';
 import { generateIngredientExplanation } from '@/lib/services/aiExplanation';
 import { findHealthierAlternatives, type AlternativeProduct } from '@/lib/services/alternatives';
 import { getShoppingLinks, type ShopLink } from '@/lib/services/affiliateLinks';
+import { fetchProductByBarcode, getDisplayName, getIngredientsText, getCleanedAllergens, getCleanedAdditives, getNutriscoreGrade, getNutritionData, calculateHealthRating } from '@/lib/services/openFoodFacts';
+import { analyzeProduct } from '@/lib/services/ingredientMatcher';
 import { COLORS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 import { NutriscoreBadge } from '@/components/NutriscoreBadge';
 import { IngredientDetailModal } from '@/components/IngredientDetailModal';
+import type { ScannedProduct, DataSource } from '@/lib/types';
 import type { SafetyStatus, ProductCategory, ParsedIngredient, IngredientFlag, HealthRating } from '@/lib/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -228,6 +232,72 @@ export default function ResultScreen() {
   const [showShopModal, setShowShopModal] = useState(false);
   const [shopLinks, setShopLinks] = useState<ShopLink[]>([]);
   const [selectedProductForShop, setSelectedProductForShop] = useState<{ name: string; brand?: string } | null>(null);
+  const [isLoadingAltDetails, setIsLoadingAltDetails] = useState<string | null>(null);
+
+  // View details of an alternative product - fetch from API and navigate
+  const handleViewAlternativeDetails = async (barcode: string, productName: string) => {
+    setIsLoadingAltDetails(barcode);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    try {
+      // Check if already in history
+      const existingProduct = products.find((p) => p.barcode === barcode);
+      if (existingProduct) {
+        router.push(`/result?id=${existingProduct.id}`);
+        return;
+      }
+      
+      // Fetch product from API
+      const offProduct = await fetchProductByBarcode(barcode, product?.category || 'food');
+      
+      if (!offProduct) {
+        Alert.alert('Product Not Found', 'Could not load details for this product.');
+        return;
+      }
+      
+      // Parse product data
+      const ingredientsText = getIngredientsText(offProduct);
+      const ingredients = analyzeProduct(ingredientsText, []);
+      const nutriscoreGrade = getNutriscoreGrade(offProduct);
+      const novaScore = offProduct.nova_group;
+      const additives = getCleanedAdditives(offProduct);
+      const allergens = getCleanedAllergens(offProduct);
+      const healthRating = calculateHealthRating(nutriscoreGrade, novaScore, additives.length);
+      
+      const scannedProduct: ScannedProduct = {
+        id: uuidv4(),
+        barcode,
+        name: getDisplayName(offProduct),
+        brand: offProduct.brands || undefined,
+        imageUrl: offProduct.image_front_url || offProduct.image_url,
+        ingredients,
+        ingredientsText,
+        allergens,
+        additives,
+        nutriscoreGrade,
+        novaScore,
+        nutritionData: getNutritionData(offProduct),
+        healthRating,
+        category: product?.category || 'food',
+        dataSource: 'api' as DataSource,
+        scannedAt: new Date().toISOString(),
+        veganStatus: offProduct.ingredients_analysis_tags?.includes('en:vegan') ? 'yes' :
+                     offProduct.ingredients_analysis_tags?.includes('en:non-vegan') ? 'no' : 'unknown',
+        vegetarianStatus: offProduct.ingredients_analysis_tags?.includes('en:vegetarian') ? 'yes' :
+                          offProduct.ingredients_analysis_tags?.includes('en:non-vegetarian') ? 'no' : 'unknown',
+        rawCategories: offProduct.categories,
+      };
+      
+      // Add to history and navigate
+      useHistoryStore.getState().addProduct(scannedProduct);
+      router.push(`/result?id=${scannedProduct.id}`);
+    } catch (error) {
+      console.error('Failed to fetch alternative details:', error);
+      Alert.alert('Error', 'Failed to load product details. Please try again.');
+    } finally {
+      setIsLoadingAltDetails(null);
+    }
+  };
 
   // Fetch healthier alternatives on-demand
   const handleFindAlternatives = async () => {
@@ -774,26 +844,31 @@ export default function ResultScreen() {
                         index < alternatives.length - 1 && 'border-b border-slate-100'
                       )}
                     >
-                      <View className="flex-row items-center">
+                      <View className="flex-row items-start">
                         {alt.imageUrl ? (
                           <Image
                             source={{ uri: alt.imageUrl }}
-                            style={{ width: 50, height: 50, borderRadius: 10 }}
+                            style={{ width: 60, height: 60, borderRadius: 12 }}
                             contentFit="cover"
                           />
                         ) : (
-                          <View className="w-[50px] h-[50px] rounded-xl bg-slate-100 items-center justify-center">
-                            <Package size={24} color={COLORS.textMuted} />
+                          <View className="w-[60px] h-[60px] rounded-xl bg-slate-100 items-center justify-center">
+                            <Package size={28} color={COLORS.textMuted} />
                           </View>
                         )}
                         <View className="ml-3 flex-1">
-                          <Text className="text-base font-semibold text-slate-900" numberOfLines={1}>
+                          <Text className="text-base font-semibold text-slate-900" numberOfLines={2}>
                             {alt.name}
                           </Text>
-                          <Text className="text-sm text-teal-600 mt-0.5">
+                          {alt.brand && (
+                            <Text className="text-sm text-slate-500 mt-0.5" numberOfLines={1}>
+                              {alt.brand}
+                            </Text>
+                          )}
+                          <Text className="text-sm text-teal-600 mt-1">
                             {alt.improvementReason}
                           </Text>
-                          <View className="flex-row items-center mt-1 gap-2">
+                          <View className="flex-row items-center mt-1.5 gap-2">
                             {alt.nutriscoreGrade && (
                               <View className={cn(
                                 'px-2 py-0.5 rounded-full',
@@ -820,17 +895,21 @@ export default function ResultScreen() {
                       {/* Action buttons */}
                       <View className="flex-row gap-2 mt-3">
                         <Pressable
-                          onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            router.push({
-                              pathname: '/(tabs)/scan',
-                              params: { barcode: alt.barcode }
-                            });
-                          }}
-                          className="flex-1 bg-teal-50 rounded-lg py-2.5 flex-row items-center justify-center gap-2"
+                          onPress={() => handleViewAlternativeDetails(alt.barcode, alt.name)}
+                          disabled={isLoadingAltDetails === alt.barcode}
+                          className={cn(
+                            "flex-1 bg-teal-50 rounded-lg py-2.5 flex-row items-center justify-center gap-2",
+                            isLoadingAltDetails === alt.barcode && "opacity-70"
+                          )}
                         >
-                          <Info size={16} color={COLORS.brandGreen} />
-                          <Text className="text-teal-600 font-semibold text-sm">View Details</Text>
+                          {isLoadingAltDetails === alt.barcode ? (
+                            <ActivityIndicator size="small" color={COLORS.brandGreen} />
+                          ) : (
+                            <>
+                              <Info size={16} color={COLORS.brandGreen} />
+                              <Text className="text-teal-600 font-semibold text-sm">View Details</Text>
+                            </>
+                          )}
                         </Pressable>
                         <Pressable
                           onPress={() => handleSearchProduct(alt.name, alt.brand)}
