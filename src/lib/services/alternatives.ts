@@ -608,12 +608,20 @@ export async function findHealthierAlternatives(
     const nutriscore = getNutriscoreGrade(product);
     const novaScore = product.nova_group;
     const additives = getCleanedAdditives(product);
+    
+    // Try multiple image sources - search API may return different fields
+    const imageUrl = product.image_front_url 
+      || product.image_url 
+      || product.image_front_small_url
+      || product.image_small_url
+      || (product.selected_images?.front?.display && Object.values(product.selected_images.front.display)[0])
+      || (product.selected_images?.front?.small && Object.values(product.selected_images.front.small)[0]);
 
     alternatives.push({
       barcode,
       name,
       brand: product.brands,
-      imageUrl: product.image_front_url || product.image_url,
+      imageUrl,
       nutriscoreGrade: nutriscore,
       novaScore,
       healthRating: calculateHealthRating(nutriscore, novaScore, additives.length),

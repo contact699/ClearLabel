@@ -149,6 +149,17 @@ export interface OFFProduct {
   ingredients_analysis_tags?: string[];
   image_url?: string;
   image_front_url?: string;
+  image_front_small_url?: string;
+  image_front_thumb_url?: string;
+  image_small_url?: string;
+  image_thumb_url?: string;
+  selected_images?: {
+    front?: {
+      display?: { [key: string]: string };
+      small?: { [key: string]: string };
+      thumb?: { [key: string]: string };
+    };
+  };
   categories?: string;
   quantity?: string;
   nutriments?: {

@@ -248,12 +248,14 @@ export default function ResultScreen() {
       }
       
       // Fetch product from API
-      const offProduct = await fetchProductByBarcode(barcode, product?.category || 'food');
+      const result = await fetchProductByBarcode(barcode);
       
-      if (!offProduct) {
+      if (!result || !result.product) {
         Alert.alert('Product Not Found', 'Could not load details for this product.');
         return;
       }
+      
+      const offProduct = result.product;
       
       // Parse product data
       const ingredientsText = getIngredientsText(offProduct);
