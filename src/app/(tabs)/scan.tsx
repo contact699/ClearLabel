@@ -580,17 +580,19 @@ export default function ScanScreen() {
         <LinearGradient
           colors={['rgba(0,0,0,0.7)', 'transparent']}
           style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 150 }}
+          pointerEvents="none"
         />
 
         {/* Gradient overlay at bottom */}
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.8)']}
           style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 200 }}
+          pointerEvents="none"
         />
 
         {/* Header */}
-        <SafeAreaView edges={['top']} className="absolute top-0 left-0 right-0">
-          <View className="flex-row items-center justify-between px-5 py-4">
+        <SafeAreaView edges={['top']} className="absolute top-0 left-0 right-0" pointerEvents="box-none">
+          <View className="flex-row items-center justify-between px-5 py-4" pointerEvents="box-none">
             <Pressable
               onPress={() => router.back()}
               className="w-12 h-12 rounded-full overflow-hidden"
