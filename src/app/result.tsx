@@ -34,6 +34,11 @@ import {
   Search,
   X,
   Heart,
+  Store,
+  Truck,
+  Tag,
+  Award,
+  TrendingUp,
 } from 'lucide-react-native';
 import Animated, {
   FadeInDown,
@@ -49,7 +54,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useHistoryStore, useUserStore, useCompareStore, useShoppingListStore } from '@/lib/stores';
 import { generateIngredientExplanation } from '@/lib/services/aiExplanation';
 import { findHealthierAlternatives, type AlternativeProduct } from '@/lib/services/alternatives';
-import { getShoppingLinks, type ShopLink } from '@/lib/services/affiliateLinks';
+import { getShoppingLinks, getCompactShoppingLinks, type ShopLink } from '@/lib/services/affiliateLinks';
 import { fetchProductByBarcode, getDisplayName, getIngredientsText, getCleanedAllergens, getCleanedAdditives, getNutriscoreGrade, getNutritionData, calculateHealthRating } from '@/lib/services/openFoodFacts';
 import { analyzeProduct } from '@/lib/services/ingredientMatcher';
 import { COLORS } from '@/lib/constants';
@@ -333,11 +338,11 @@ export default function ResultScreen() {
   // Fetch healthier alternatives on-demand
   const handleFindAlternatives = async () => {
     if (!product) return;
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setShowAlternatives(true);
     setIsLoadingAlternatives(true);
-    
+
     try {
       const results = await findHealthierAlternatives(
         product.name,
@@ -346,7 +351,8 @@ export default function ResultScreen() {
         product.nutriscoreGrade,
         product.novaScore,
         product.category,
-        5
+        5,
+        product.quantity // Pass original quantity for value comparison
       );
       setAlternatives(results);
     } catch (error) {
@@ -628,6 +634,46 @@ export default function ResultScreen() {
           </View>
         </Animated.View>
 
+        {/* Where to Buy Section */}
+        <Animated.View entering={FadeInDown.delay(120).springify()} className="px-5 mt-5">
+          <View className="bg-white rounded-2xl p-4 border border-slate-100">
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-base font-bold text-slate-900">Compare Prices</Text>
+              <Text className="text-xs text-slate-400">Opens in browser</Text>
+            </View>
+            <View className="flex-row gap-2">
+              {getCompactShoppingLinks(product.name, product.brand, product.category).map((link) => (
+                <Pressable
+                  key={link.provider}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Linking.openURL(link.url);
+                  }}
+                  className="flex-1 items-center py-3 px-2 rounded-xl active:opacity-70"
+                  style={{ backgroundColor: `${link.color}15` }}
+                >
+                  <View
+                    className="w-10 h-10 rounded-xl items-center justify-center mb-1.5"
+                    style={{ backgroundColor: `${link.color}25` }}
+                  >
+                    {link.icon === 'shopping-cart' && <ShoppingCart size={20} color={link.color} />}
+                    {link.icon === 'leaf' && <Leaf size={20} color={link.color} />}
+                    {link.icon === 'heart' && <Heart size={20} color={link.color} />}
+                    {link.icon === 'store' && <Store size={20} color={link.color} />}
+                    {link.icon === 'truck' && <Truck size={20} color={link.color} />}
+                  </View>
+                  <Text className="text-xs font-semibold text-slate-700" numberOfLines={1}>
+                    {link.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text className="text-xs text-slate-400 text-center mt-3" numberOfLines={1}>
+              Search for "{product.name}"
+            </Text>
+          </View>
+        </Animated.View>
+
         {/* Quick Stats */}
         <Animated.View entering={FadeInDown.delay(150).springify()} className="px-5 mt-5">
           <View className="flex-row gap-3">
@@ -875,6 +921,29 @@ export default function ResultScreen() {
                         index < alternatives.length - 1 && 'border-b border-slate-100'
                       )}
                     >
+                      {/* Value Badge */}
+                      {alt.valueBadge && (
+                        <View className={cn(
+                          'self-start flex-row items-center px-2 py-1 rounded-full mb-2',
+                          alt.valueBadge === 'best-quality' ? 'bg-purple-100' :
+                          alt.valueBadge === 'better-value' ? 'bg-emerald-100' :
+                          'bg-blue-100'
+                        )}>
+                          {alt.valueBadge === 'best-quality' && <Award size={12} color="#7C3AED" />}
+                          {alt.valueBadge === 'better-value' && <TrendingUp size={12} color="#059669" />}
+                          {alt.valueBadge === 'budget-pick' && <Tag size={12} color="#2563EB" />}
+                          <Text className={cn(
+                            'text-xs font-bold ml-1',
+                            alt.valueBadge === 'best-quality' ? 'text-purple-700' :
+                            alt.valueBadge === 'better-value' ? 'text-emerald-700' :
+                            'text-blue-700'
+                          )}>
+                            {alt.valueBadge === 'best-quality' ? 'Best Quality' :
+                             alt.valueBadge === 'better-value' ? 'Better Value' :
+                             'Budget Pick'}
+                          </Text>
+                        </View>
+                      )}
                       <View className="flex-row items-start">
                         {alt.imageUrl ? (
                           <Image
@@ -899,7 +968,7 @@ export default function ResultScreen() {
                           <Text className="text-sm text-teal-600 mt-1">
                             {alt.improvementReason}
                           </Text>
-                          <View className="flex-row items-center mt-1.5 gap-2">
+                          <View className="flex-row items-center mt-1.5 gap-2 flex-wrap">
                             {alt.nutriscoreGrade && (
                               <View className={cn(
                                 'px-2 py-0.5 rounded-full',
@@ -920,11 +989,26 @@ export default function ResultScreen() {
                             {alt.novaScore && (
                               <Text className="text-xs text-slate-500">NOVA {alt.novaScore}</Text>
                             )}
+                            {alt.parsedQuantity && (
+                              <View className="px-2 py-0.5 rounded-full bg-slate-100">
+                                <Text className="text-xs font-medium text-slate-600">
+                                  {alt.parsedQuantity.display}
+                                </Text>
+                              </View>
+                            )}
+                            {alt.valueComparison && alt.valueComparison.quantityDiff !== 0 && (
+                              <Text className={cn(
+                                'text-xs font-medium',
+                                alt.valueComparison.quantityDiff > 0 ? 'text-emerald-600' : 'text-slate-500'
+                              )}>
+                                {alt.valueComparison.description}
+                              </Text>
+                            )}
                           </View>
                         </View>
                       </View>
-                      {/* Action buttons */}
-                      <View className="flex-row gap-2 mt-3">
+                      {/* Action buttons - View Details and inline retailer icons */}
+                      <View className="flex-row gap-2 mt-3 items-center">
                         <Pressable
                           onPress={() => handleViewAlternativeDetails(alt.barcode, alt.name)}
                           disabled={isLoadingAltDetails === alt.barcode}
@@ -938,17 +1022,30 @@ export default function ResultScreen() {
                           ) : (
                             <>
                               <Info size={16} color={COLORS.brandGreen} />
-                              <Text className="text-teal-600 font-semibold text-sm">View Details</Text>
+                              <Text className="text-teal-600 font-semibold text-sm">Details</Text>
                             </>
                           )}
                         </Pressable>
-                        <Pressable
-                          onPress={() => handleSearchProduct(alt.name, alt.brand)}
-                          className="flex-1 bg-slate-100 rounded-lg py-2.5 flex-row items-center justify-center gap-2"
-                        >
-                          <ExternalLink size={16} color={COLORS.textSecondary} />
-                          <Text className="text-slate-600 font-semibold text-sm">Shop</Text>
-                        </Pressable>
+                        {/* Inline retailer icons */}
+                        <View className="flex-row gap-1.5">
+                          {getCompactShoppingLinks(alt.name, alt.brand, product?.category).slice(0, 3).map((link) => (
+                            <Pressable
+                              key={link.provider}
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                Linking.openURL(link.url);
+                              }}
+                              className="w-10 h-10 rounded-lg items-center justify-center active:opacity-70"
+                              style={{ backgroundColor: `${link.color}15` }}
+                            >
+                              {link.icon === 'shopping-cart' && <ShoppingCart size={18} color={link.color} />}
+                              {link.icon === 'store' && <Store size={18} color={link.color} />}
+                              {link.icon === 'truck' && <Truck size={18} color={link.color} />}
+                              {link.icon === 'leaf' && <Leaf size={18} color={link.color} />}
+                              {link.icon === 'heart' && <Heart size={18} color={link.color} />}
+                            </Pressable>
+                          ))}
+                        </View>
                       </View>
                     </View>
                   ))}
@@ -1220,25 +1317,29 @@ export default function ResultScreen() {
               )}
             </View>
             <View className="p-5 gap-3">
-              {shopLinks.map((link, index) => (
+              {shopLinks.map((link) => (
                 <Pressable
                   key={link.provider}
                   onPress={() => handleOpenShopLink(link.url)}
                   className="flex-row items-center p-4 bg-slate-50 rounded-2xl active:bg-slate-100"
                 >
-                  <View className={`w-12 h-12 rounded-xl items-center justify-center ${
-                    link.provider === 'amazon' ? 'bg-orange-100' :
-                    link.provider === 'iherb' ? 'bg-green-100' :
-                    'bg-pink-100'
-                  }`}>
-                    {link.icon === 'shopping-cart' && <ShoppingCart size={24} color="#EA580C" />}
-                    {link.icon === 'leaf' && <Leaf size={24} color="#16A34A" />}
-                    {link.icon === 'heart' && <Heart size={24} color="#EC4899" />}
+                  <View
+                    className="w-12 h-12 rounded-xl items-center justify-center"
+                    style={{ backgroundColor: `${link.color}20` }}
+                  >
+                    {link.icon === 'shopping-cart' && <ShoppingCart size={24} color={link.color} />}
+                    {link.icon === 'leaf' && <Leaf size={24} color={link.color} />}
+                    {link.icon === 'heart' && <Heart size={24} color={link.color} />}
+                    {link.icon === 'store' && <Store size={24} color={link.color} />}
+                    {link.icon === 'truck' && <Truck size={24} color={link.color} />}
                   </View>
                   <View className="flex-1 ml-4">
                     <Text className="text-slate-900 font-semibold text-base">{link.label}</Text>
                     <Text className="text-slate-500 text-sm mt-0.5">
                       {link.provider === 'amazon' ? 'Wide selection, fast shipping' :
+                       link.provider === 'walmart' ? 'Everyday low prices' :
+                       link.provider === 'target' ? 'Quality products, easy pickup' :
+                       link.provider === 'instacart' ? 'Fast delivery from local stores' :
                        link.provider === 'iherb' ? 'Health & wellness products' :
                        'Organic & natural products'}
                     </Text>

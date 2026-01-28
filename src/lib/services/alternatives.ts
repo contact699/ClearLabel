@@ -2,6 +2,13 @@
 import type { OFFProduct, ProductCategory, HealthRating } from '../types';
 import { getNutriscoreGrade, getDisplayName, calculateHealthRating, getCleanedAdditives } from './openFoodFacts';
 import { fetchWithRetry } from '../utils/network';
+import {
+  type ParsedQuantity,
+  type ValueBadge,
+  extractQuantityFromProduct,
+  compareQuantities,
+  getValueBadge,
+} from '../utils/quantityParser';
 
 const USER_AGENT = 'ClearLabel - React Native App';
 
@@ -15,6 +22,14 @@ export interface AlternativeProduct {
   healthRating: HealthRating;
   healthScore: number; // 0-100 score for comparison
   improvementReason: string;
+  // Quantity and value comparison fields
+  quantity?: string;
+  parsedQuantity?: ParsedQuantity;
+  valueComparison?: {
+    quantityDiff: number; // +50 means 50% more product
+    description: string; // "50% more product"
+  };
+  valueBadge?: ValueBadge;
 }
 
 interface SearchResult {
@@ -494,7 +509,7 @@ async function searchProducts(
       : 'https://world.openfoodfacts.org';
     
     // Search for products with good nutriscore (A or B)
-    // Request specific fields including images
+    // Request specific fields including images and quantity
     const searchUrl = `${baseUrl}/cgi/search.pl?` + new URLSearchParams({
       search_terms: searchTerm,
       search_simple: '1',
@@ -503,8 +518,8 @@ async function searchProducts(
       page_size: '20',
       // Sort by nutriscore
       sort_by: 'nutriscore_score',
-      // Request all needed fields including images
-      fields: 'code,product_name,product_name_en,brands,image_url,image_front_url,image_front_small_url,image_small_url,nutriscore_grade,nutrition_grades,nova_group,additives_tags,categories',
+      // Request all needed fields including images and quantity
+      fields: 'code,product_name,product_name_en,brands,image_url,image_front_url,image_front_small_url,image_small_url,nutriscore_grade,nutrition_grades,nova_group,additives_tags,categories,quantity,product_quantity,product_quantity_unit',
     }).toString();
     
     console.log('[Alternatives] Search URL:', searchUrl);
@@ -536,7 +551,8 @@ export async function findHealthierAlternatives(
   currentNutriscore: string | undefined,
   currentNovaScore: number | undefined,
   category: ProductCategory,
-  maxResults: number = 3
+  maxResults: number = 3,
+  originalQuantity?: string
 ): Promise<AlternativeProduct[]> {
   console.log('[Alternatives] Finding alternatives for:', productName);
   
@@ -588,6 +604,11 @@ export async function findHealthierAlternatives(
     allProducts.push(...products);
   }
 
+  // Parse original quantity for comparison
+  const originalParsedQuantity = originalQuantity
+    ? extractQuantityFromProduct({ quantity: originalQuantity })
+    : null;
+
   // Filter and score products
   const alternatives: AlternativeProduct[] = [];
   const seenBarcodes = new Set<string>([currentBarcode]);
@@ -599,7 +620,7 @@ export async function findHealthierAlternatives(
 
     const name = getDisplayName(product);
     if (!name || name === 'Unknown Product') continue;
-    
+
     // Check if product is actually relevant (same category)
     if (!isRelevantProduct(product, categoryHint, productName)) {
       console.log('[Alternatives] Skipping irrelevant product:', name);
@@ -607,21 +628,27 @@ export async function findHealthierAlternatives(
     }
 
     const healthScore = calculateHealthScore(product);
-    
+
     // Only include if it's healthier than the current product
     if (healthScore <= currentHealthScore) continue;
 
     const nutriscore = getNutriscoreGrade(product);
     const novaScore = product.nova_group;
     const additives = getCleanedAdditives(product);
-    
+
     // Try multiple image sources - search API may return different fields
-    const imageUrl = product.image_front_url 
-      || product.image_url 
+    const imageUrl = product.image_front_url
+      || product.image_url
       || product.image_front_small_url
       || product.image_small_url
       || (product.selected_images?.front?.display && Object.values(product.selected_images.front.display)[0])
       || (product.selected_images?.front?.small && Object.values(product.selected_images.front.small)[0]);
+
+    // Parse quantity for this alternative
+    const parsedQuantity = extractQuantityFromProduct(product);
+    const quantityComparison = originalParsedQuantity && parsedQuantity
+      ? compareQuantities(originalParsedQuantity, parsedQuantity)
+      : null;
 
     alternatives.push({
       barcode,
@@ -633,12 +660,35 @@ export async function findHealthierAlternatives(
       healthRating: calculateHealthRating(nutriscore, novaScore, additives.length),
       healthScore,
       improvementReason: getImprovementReason(product, currentNutriscore, currentNovaScore),
+      quantity: product.quantity,
+      parsedQuantity: parsedQuantity ?? undefined,
+      valueComparison: quantityComparison
+        ? {
+            quantityDiff: quantityComparison.diff,
+            description: quantityComparison.description,
+          }
+        : undefined,
     });
   }
 
   // Sort by health score and return top results
   alternatives.sort((a, b) => b.healthScore - a.healthScore);
-  
+
+  // Find the highest health score for badge assignment
+  const topHealthScore = alternatives.length > 0 ? alternatives[0].healthScore : 0;
+
+  // Assign value badges
+  const topAlternatives = alternatives.slice(0, maxResults);
+  for (const alt of topAlternatives) {
+    const isTopHealthScore = alt.healthScore === topHealthScore;
+    alt.valueBadge = getValueBadge(
+      alt.healthScore,
+      currentHealthScore,
+      alt.valueComparison ? { diff: alt.valueComparison.quantityDiff } : null,
+      isTopHealthScore
+    );
+  }
+
   console.log('[Alternatives] Found', alternatives.length, 'healthier options');
-  return alternatives.slice(0, maxResults);
+  return topAlternatives;
 }

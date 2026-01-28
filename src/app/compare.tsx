@@ -18,6 +18,7 @@ import {
   Utensils,
   Sparkles,
   Crown,
+  Package,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -26,6 +27,7 @@ import { NutriscoreBadge } from '@/components/NutriscoreBadge';
 import { COLORS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 import type { ScannedProduct, HealthRating, ParsedIngredient } from '@/lib/types';
+import { parseQuantity, compareQuantities, type ParsedQuantity } from '@/lib/utils/quantityParser';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 56) / 2;
@@ -272,6 +274,30 @@ export default function CompareScreen() {
     return allergensA < allergensB ? 'better' : 'worse';
   };
 
+  // Quantity comparison
+  const quantityA = useMemo(() => {
+    if (!productA?.quantity) return null;
+    return parseQuantity(productA.quantity);
+  }, [productA?.quantity]);
+
+  const quantityB = useMemo(() => {
+    if (!productB?.quantity) return null;
+    return parseQuantity(productB.quantity);
+  }, [productB?.quantity]);
+
+  const quantityComparison = useMemo(() => {
+    if (!quantityA || !quantityB) return null;
+    return compareQuantities(quantityA, quantityB);
+  }, [quantityA, quantityB]);
+
+  const getQuantityComparison = (): ComparisonResult => {
+    if (!quantityComparison) return 'unknown';
+    if (Math.abs(quantityComparison.diff) < 5) return 'equal';
+    // More quantity is better (lower is "better" in original comparison, but for quantity, more is better)
+    // So we flip the logic - positive diff means B has more, so A is "worse"
+    return quantityComparison.diff > 0 ? 'worse' : 'better';
+  };
+
   if (!productA && !productB) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center px-8">
@@ -477,6 +503,28 @@ export default function CompareScreen() {
                 comparison={getAllergensComparison()}
                 delay={500}
               />
+
+              {/* Quantity Comparison */}
+              {(quantityA || quantityB) && (
+                <ComparisonRow
+                  label="Quantity"
+                  valueA={quantityA?.display}
+                  valueB={quantityB?.display}
+                  comparison={getQuantityComparison()}
+                  delay={525}
+                  renderValue={(value, isWinner) => (
+                    <View className="flex-row items-center">
+                      <Package size={14} color={isWinner ? COLORS.brandGreen : COLORS.textMuted} />
+                      <Text className={cn(
+                        'text-sm font-semibold ml-1',
+                        isWinner ? 'text-teal-600' : 'text-slate-700'
+                      )}>
+                        {value ?? '-'}
+                      </Text>
+                    </View>
+                  )}
+                />
+              )}
 
               {/* Vegan Status */}
               <Animated.View

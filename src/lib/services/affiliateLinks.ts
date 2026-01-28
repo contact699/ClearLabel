@@ -40,16 +40,32 @@ const AFFILIATE_CONFIG = {
     // Apply at: https://thrivemarket.com/affiliate
     affiliateUrl: '', // e.g., 'https://thrivemarket.com/?ref=clearlabel'
   },
+  walmart: {
+    // Walmart affiliate (US only)
+    // Apply at: https://affiliates.walmart.com/
+    affiliateId: '', // e.g., 'clearlabel'
+  },
+  target: {
+    // Target affiliate (US only)
+    // Apply at: https://affiliate.target.com/
+    affiliateId: '', // e.g., 'clearlabel'
+  },
+  instacart: {
+    // Instacart affiliate
+    // Apply at: https://www.instacart.com/company/partners
+    affiliateId: '', // e.g., 'clearlabel'
+  },
 };
 
-export type ShopOption = 'amazon' | 'iherb' | 'thriveMarket';
+export type ShopOption = 'amazon' | 'iherb' | 'thriveMarket' | 'walmart' | 'target' | 'instacart';
 
 export interface ShopLink {
   provider: ShopOption;
   label: string;
   url: string;
-  icon: 'shopping-cart' | 'leaf' | 'heart';
+  icon: 'shopping-cart' | 'leaf' | 'heart' | 'store' | 'truck';
   available: boolean;
+  color: string; // Brand color for the icon background
 }
 
 // Detect user's country from locale
@@ -107,13 +123,58 @@ export function getIHerbSearchUrl(productName: string): string {
 // Generate Thrive Market search URL
 export function getThriveMarketSearchUrl(productName: string): string {
   const encodedQuery = encodeURIComponent(productName);
-  
+
   // If affiliate URL is configured, use it with search
   if (AFFILIATE_CONFIG.thriveMarket.affiliateUrl) {
     return `${AFFILIATE_CONFIG.thriveMarket.affiliateUrl}&search=${encodedQuery}`;
   }
-  
+
   return `https://thrivemarket.com/search?search=${encodedQuery}`;
+}
+
+// Generate Walmart search URL (US only)
+export function getWalmartSearchUrl(productName: string, brand?: string): string {
+  const searchQuery = brand ? `${brand} ${productName}` : productName;
+  const encodedQuery = encodeURIComponent(searchQuery);
+
+  let url = `https://www.walmart.com/search?q=${encodedQuery}`;
+
+  // Add affiliate ID if configured
+  if (AFFILIATE_CONFIG.walmart.affiliateId) {
+    url += `&affiliateId=${AFFILIATE_CONFIG.walmart.affiliateId}`;
+  }
+
+  return url;
+}
+
+// Generate Target search URL (US only)
+export function getTargetSearchUrl(productName: string, brand?: string): string {
+  const searchQuery = brand ? `${brand} ${productName}` : productName;
+  const encodedQuery = encodeURIComponent(searchQuery);
+
+  let url = `https://www.target.com/s?searchTerm=${encodedQuery}`;
+
+  // Add affiliate ID if configured
+  if (AFFILIATE_CONFIG.target.affiliateId) {
+    url += `&afId=${AFFILIATE_CONFIG.target.affiliateId}`;
+  }
+
+  return url;
+}
+
+// Generate Instacart search URL
+export function getInstacartSearchUrl(productName: string, brand?: string): string {
+  const searchQuery = brand ? `${brand} ${productName}` : productName;
+  const encodedQuery = encodeURIComponent(searchQuery);
+
+  let url = `https://www.instacart.com/store/search/${encodedQuery}`;
+
+  // Add affiliate ID if configured
+  if (AFFILIATE_CONFIG.instacart.affiliateId) {
+    url += `?affiliate=${AFFILIATE_CONFIG.instacart.affiliateId}`;
+  }
+
+  return url;
 }
 
 // Determine if a product is likely a supplement/vitamin (better for iHerb)
@@ -164,55 +225,97 @@ export function getShoppingLinks(
   const isUS = isUSUser();
   const isSupplement = isSupplementCategory(productName, category);
   const isHealthy = isOrganicHealthProduct(productName, brand);
-  
+
   // Amazon - always available, works globally
   links.push({
     provider: 'amazon',
-    label: 'Shop on Amazon',
+    label: 'Amazon',
     url: getAmazonSearchUrl(productName, brand),
     icon: 'shopping-cart',
     available: true,
+    color: '#FF9900',
   });
-  
+
+  // US-only retailers
+  if (isUS) {
+    // Walmart - general grocery
+    links.push({
+      provider: 'walmart',
+      label: 'Walmart',
+      url: getWalmartSearchUrl(productName, brand),
+      icon: 'store',
+      available: true,
+      color: '#0071DC',
+    });
+
+    // Target - general grocery
+    links.push({
+      provider: 'target',
+      label: 'Target',
+      url: getTargetSearchUrl(productName, brand),
+      icon: 'store',
+      available: true,
+      color: '#CC0000',
+    });
+
+    // Instacart - delivery
+    links.push({
+      provider: 'instacart',
+      label: 'Instacart',
+      url: getInstacartSearchUrl(productName, brand),
+      icon: 'truck',
+      available: true,
+      color: '#43B02A',
+    });
+
+    // Thrive Market - prioritize for organic/health products
+    if (isHealthy) {
+      links.unshift({
+        provider: 'thriveMarket',
+        label: 'Thrive Market',
+        url: getThriveMarketSearchUrl(productName),
+        icon: 'heart',
+        available: true,
+        color: '#00A86B',
+      });
+    }
+  }
+
   // iHerb - prioritize for supplements, available globally
   if (isSupplement) {
-    // Insert at beginning for supplements
-    links.unshift({
+    // Insert near beginning for supplements
+    links.splice(1, 0, {
       provider: 'iherb',
-      label: 'Shop on iHerb',
+      label: 'iHerb',
       url: getIHerbSearchUrl(productName),
       icon: 'leaf',
       available: true,
+      color: '#5B9A47',
     });
   } else {
     links.push({
       provider: 'iherb',
-      label: 'Shop on iHerb',
+      label: 'iHerb',
       url: getIHerbSearchUrl(productName),
       icon: 'leaf',
       available: true,
+      color: '#5B9A47',
     });
   }
-  
-  // Thrive Market - US only, prioritize for organic/health products
-  if (isUS) {
-    const thriveLink: ShopLink = {
-      provider: 'thriveMarket',
-      label: 'Shop on Thrive Market',
-      url: getThriveMarketSearchUrl(productName),
-      icon: 'heart',
-      available: true,
-    };
-    
-    if (isHealthy) {
-      // Insert at beginning for health products
-      links.unshift(thriveLink);
-    } else {
-      links.push(thriveLink);
-    }
-  }
-  
+
   return links;
+}
+
+/**
+ * Get a compact list of shopping links (max 4 for inline display)
+ */
+export function getCompactShoppingLinks(
+  productName: string,
+  brand?: string,
+  category?: string
+): ShopLink[] {
+  const allLinks = getShoppingLinks(productName, brand, category);
+  return allLinks.slice(0, 4);
 }
 
 /**

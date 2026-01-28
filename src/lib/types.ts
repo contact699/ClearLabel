@@ -166,6 +166,8 @@ export interface OFFProduct {
   };
   categories?: string;
   quantity?: string;
+  product_quantity?: number;
+  product_quantity_unit?: string;
   nutriments?: {
     sugars_100g?: number;
     fat_100g?: number;
