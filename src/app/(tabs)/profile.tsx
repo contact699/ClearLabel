@@ -37,7 +37,8 @@ import {
 import Animated, { FadeInDown, FadeIn, SlideInRight } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
-import { useUserStore, useSubscriptionStore, useHistoryStore, useFamilyProfilesStore, getSuggestedProfileColor, PROFILE_EMOJIS, RELATIONSHIP_EMOJIS } from '@/lib/stores';
+import { useUserStore, useSubscriptionStore, useHistoryStore, useFamilyProfilesStore, getSuggestedProfileColor, PROFILE_EMOJIS, RELATIONSHIP_EMOJIS, useStreakStore } from '@/lib/stores';
+import { AchievementsSection } from '@/components/AchievementsSection';
 import { COLORS } from '@/lib/constants';
 import { PREDEFINED_FLAGS, PROFILE_COLORS, RELATIONSHIP_LABELS } from '@/lib/types';
 import { cn } from '@/lib/cn';
@@ -471,6 +472,11 @@ export default function ProfileScreen() {
               </LinearGradient>
             </Pressable>
           </Animated.View>
+
+          {/* Achievements Section */}
+          <View className="px-6 mt-6">
+            <AchievementsSection />
+          </View>
 
           {/* Upgrade Banner */}
           {!isPro && (

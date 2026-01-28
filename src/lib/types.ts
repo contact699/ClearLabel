@@ -100,20 +100,24 @@ export interface ScannedProduct {
   category: ProductCategory;
   ingredients: ParsedIngredient[];
   rawIngredients?: string;
+  ingredientsText?: string;
   additives: string[];
   allergens: string[];
   novaScore?: number;
   nutriscoreGrade?: string;
   veganStatus: VeganStatus;
   vegetarianStatus: VegetarianStatus;
-  imageURL?: string;
-  source: DataSource;
-  scannedAt: Date;
+  imageUrl?: string;
+  imageURL?: string; // Legacy alias
+  dataSource?: DataSource;
+  source?: DataSource; // Legacy alias
+  scannedAt: Date | string;
   aiSummary?: string;
   flagsTriggered: string[];
   quantity?: string;
   nutritionData?: NutritionData;
   healthRating?: HealthRating;
+  rawCategories?: string;
 }
 
 export type SafetyStatus = 'good' | 'caution' | 'warning' | 'unknown';

@@ -452,8 +452,8 @@ export default function EncyclopediaScreen() {
             >
               {filter.key !== 'all' && (
                 <View className="mr-2">
-                  {selectedCategory === filter.key 
-                    ? React.cloneElement(filter.icon as React.ReactElement, { color: '#FFFFFF' })
+                  {selectedCategory === filter.key
+                    ? React.cloneElement(filter.icon as React.ReactElement<{ color?: string }>, { color: '#FFFFFF' })
                     : filter.icon
                   }
                 </View>

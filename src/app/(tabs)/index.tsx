@@ -18,10 +18,12 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useUserStore, useHistoryStore, useShoppingListStore } from '@/lib/stores';
+import { useUserStore, useHistoryStore, useShoppingListStore, useStreakStore } from '@/lib/stores';
 import { COLORS, DAILY_TIPS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 import type { ScannedProduct, SafetyStatus } from '@/lib/types';
+import { StreakCard } from '@/components/StreakCard';
+import { MilestoneModal } from '@/components/MilestoneModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH * 0.38;
@@ -107,6 +109,12 @@ export default function HomeScreen() {
   const activeListId = useShoppingListStore((s) => s.activeListId);
   const activeList = shoppingLists.find((l) => l.id === activeListId) || shoppingLists[0];
   const uncheckedCount = activeList ? useShoppingListStore.getState().getUncheckedCount(activeList.id) : 0;
+
+  // Streak check on mount
+  const checkAndUpdateStreak = useStreakStore((s) => s.checkAndUpdateStreak);
+  useEffect(() => {
+    checkAndUpdateStreak();
+  }, []);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -217,6 +225,11 @@ export default function HomeScreen() {
               </LinearGradient>
             </AnimatedPressable>
           </Animated.View>
+
+          {/* Streak Card */}
+          <View className="px-6 mt-4">
+            <StreakCard onPress={() => router.push('/(tabs)/profile')} />
+          </View>
 
           {/* Stats Cards */}
           <Animated.View entering={FadeInDown.delay(150).springify()} className="px-6 mt-6">
@@ -454,6 +467,8 @@ export default function HomeScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
+      {/* Milestone Celebration Modal */}
+      <MilestoneModal />
     </View>
   );
 }

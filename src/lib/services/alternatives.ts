@@ -100,7 +100,7 @@ function getImprovementReason(
 function getCategorySearchTerms(
   productName: string,
   categories?: string
-): string[] {
+): { terms: string[]; categoryHint?: string } {
   const terms: string[] = [];
   const nameLower = productName.toLowerCase();
   

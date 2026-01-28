@@ -56,7 +56,7 @@ import { COLORS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 import { NutriscoreBadge } from '@/components/NutriscoreBadge';
 import { IngredientDetailModal } from '@/components/IngredientDetailModal';
-import type { ScannedProduct, DataSource } from '@/lib/types';
+import type { ScannedProduct, DataSource, VeganStatus, VegetarianStatus } from '@/lib/types';
 import type { SafetyStatus, ProductCategory, ParsedIngredient, IngredientFlag, HealthRating } from '@/lib/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -271,17 +271,17 @@ export default function ResultScreen() {
       const allergens = getCleanedAllergens(offProduct);
       
       // Determine vegan/vegetarian status
-      const veganStatus = offProduct.ingredients_analysis_tags?.includes('en:vegan') ? 'yes' as const :
-                          offProduct.ingredients_analysis_tags?.includes('en:non-vegan') ? 'no' as const : 'unknown' as const;
-      const vegetarianStatus = offProduct.ingredients_analysis_tags?.includes('en:vegetarian') ? 'yes' as const :
-                               offProduct.ingredients_analysis_tags?.includes('en:non-vegetarian') ? 'no' as const : 'unknown' as const;
+      const veganStatus: VeganStatus = offProduct.ingredients_analysis_tags?.includes('en:vegan') ? 'vegan' :
+                          offProduct.ingredients_analysis_tags?.includes('en:non-vegan') ? 'nonVegan' : 'unknown';
+      const vegetarianStatus: VegetarianStatus = offProduct.ingredients_analysis_tags?.includes('en:vegetarian') ? 'vegetarian' :
+                               offProduct.ingredients_analysis_tags?.includes('en:non-vegetarian') ? 'nonVegetarian' : 'unknown';
       
       // Get active user flags
       const activeFlags = userFlags.filter(f => f.isActive);
       
       // Analyze ingredients
       const analysisResult = analyzeProduct(
-        ingredientsText,
+        ingredientsText || '',
         allergens,
         additives,
         veganStatus,
@@ -306,10 +306,13 @@ export default function ResultScreen() {
         healthRating,
         category: product?.category || 'food',
         dataSource: 'api' as DataSource,
-        scannedAt: new Date().toISOString(),
+        scannedAt: new Date(),
         veganStatus,
         vegetarianStatus,
         rawCategories: offProduct.categories,
+        flagsTriggered: analysisResult.parsedIngredients
+          .filter((i) => i.isFlagged)
+          .flatMap((i) => i.flagReasons),
       };
       
       // Add to history and navigate
@@ -339,7 +342,7 @@ export default function ResultScreen() {
       const results = await findHealthierAlternatives(
         product.name,
         product.rawCategories,
-        product.barcode,
+        product.barcode || '',
         product.nutriscoreGrade,
         product.novaScore,
         product.category,

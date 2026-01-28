@@ -6,3 +6,5 @@ export { useCompareStore } from './compareStore';
 export { useFamilyProfilesStore, getSuggestedProfileColor, PROFILE_EMOJIS, RELATIONSHIP_EMOJIS } from './familyProfilesStore';
 export { useShoppingListStore } from './shoppingListStore';
 export type { ShoppingList, ShoppingListItem, SharedMember } from './shoppingListStore';
+export { useStreakStore, MILESTONES } from './streakStore';
+export type { MilestoneProgress } from './streakStore';
