@@ -80,7 +80,8 @@ function getStatusDetails(
   color: string;
   bgGradient: [string, string];
 } {
-  if (healthRating || nutriscoreGrade || novaScore) {
+  const hasRealHealthRating = healthRating && healthRating !== 'unknown';
+  if (hasRealHealthRating || nutriscoreGrade || novaScore) {
     let healthScore = 0;
     let factors = 0;
 

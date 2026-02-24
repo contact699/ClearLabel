@@ -713,7 +713,7 @@ export default function ScanScreen() {
         </View>
 
         {/* Scan Frame */}
-        <View className="flex-1 items-center justify-center">
+        <View className="flex-1 items-center justify-center" pointerEvents="box-none">
           {scanMode === 'barcode' ? (
             <View className="w-72 h-44 relative">
               <AnimatedCorner position="tl" isScanning={isScanning && !isLoading} />

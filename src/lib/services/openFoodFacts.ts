@@ -187,8 +187,9 @@ export function calculateHealthRating(
     }
   }
 
-  // Additives count
-  if (additivesCount !== undefined) {
+  // Additives count - only use as a factor if we have at least one other factor
+  // (nutriscore or NOVA), since additivesCount=0 could mean "no data" not "no additives"
+  if (additivesCount !== undefined && factors > 0) {
     factors++;
     if (additivesCount === 0) score += 5;
     else if (additivesCount <= 2) score += 4;
