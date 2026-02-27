@@ -610,7 +610,7 @@ export default function ResultScreen() {
         </View>
 
         {/* Status Card */}
-        <Animated.View entering={FadeInDown.delay(100).springify()} className="px-5 -mt-6">
+        <Animated.View entering={FadeInDown.delay(100).springify()} className="px-5 mt-4">
           <View className="rounded-3xl overflow-hidden">
             <LinearGradient
               colors={statusDetails.bgGradient}

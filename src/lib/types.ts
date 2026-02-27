@@ -143,6 +143,21 @@ export interface OFFProduct {
   brands?: string;
   ingredients_text?: string;
   ingredients_text_en?: string;
+  ingredients_text_with_allergens?: string;
+  ingredients_text_with_allergens_en?: string;
+  // Language-specific ingredient text fields (common languages)
+  ingredients_text_fr?: string;
+  ingredients_text_es?: string;
+  ingredients_text_de?: string;
+  ingredients_text_it?: string;
+  ingredients_text_pt?: string;
+  // Parsed ingredients array from OpenFoodFacts
+  ingredients?: Array<{
+    id?: string;
+    text?: string;
+    percent?: number;
+    percent_estimate?: number;
+  }>;
   allergens?: string;
   allergens_from_ingredients?: string;
   additives_tags?: string[];

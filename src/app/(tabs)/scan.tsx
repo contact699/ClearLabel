@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, Pressable, ActivityIndicator, TextInput, Modal, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
@@ -269,6 +269,17 @@ export default function ScanScreen() {
   const [showSuccess, setShowSuccess] = useState(false);
   const lastScannedRef = useRef<string | null>(null);
 
+  // Reset scanner when screen comes back into focus (e.g. after viewing result)
+  useFocusEffect(
+    useCallback(() => {
+      setIsScanning(true);
+      setError(null);
+      setCapturedImage(null);
+      setShowSuccess(false);
+      lastScannedRef.current = null;
+    }, [])
+  );
+
   const processBarcode = useCallback(async (barcode: string) => {
     if (isLoading || barcode === lastScannedRef.current) return;
 
@@ -383,7 +394,7 @@ export default function ScanScreen() {
 
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
+        quality: 1,
       });
 
       if (photo?.uri) {

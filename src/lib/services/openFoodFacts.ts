@@ -78,8 +78,50 @@ export function getDisplayName(product: OFFProduct): string {
 }
 
 // Helper to get ingredients text from OFF product
+// Tries multiple fields since ingredient data varies by product/region
 export function getIngredientsText(product: OFFProduct): string | undefined {
-  return product.ingredients_text_en || product.ingredients_text;
+  // Try the primary English and generic text fields first
+  if (product.ingredients_text_en && product.ingredients_text_en.trim().length > 0) {
+    return product.ingredients_text_en;
+  }
+  if (product.ingredients_text && product.ingredients_text.trim().length > 0) {
+    return product.ingredients_text;
+  }
+
+  // Try text with allergens markup (often populated when plain text isn't)
+  if (product.ingredients_text_with_allergens_en && product.ingredients_text_with_allergens_en.trim().length > 0) {
+    // Strip HTML-like allergen markup (e.g. <span class="allergen">milk</span> → milk)
+    return product.ingredients_text_with_allergens_en.replace(/<[^>]*>/g, '');
+  }
+  if (product.ingredients_text_with_allergens && product.ingredients_text_with_allergens.trim().length > 0) {
+    return product.ingredients_text_with_allergens.replace(/<[^>]*>/g, '');
+  }
+
+  // Try other common language fields
+  const languageFields = [
+    product.ingredients_text_fr,
+    product.ingredients_text_es,
+    product.ingredients_text_de,
+    product.ingredients_text_it,
+    product.ingredients_text_pt,
+  ];
+  for (const field of languageFields) {
+    if (field && field.trim().length > 0) {
+      return field;
+    }
+  }
+
+  // Last resort: reconstruct from parsed ingredients array
+  if (product.ingredients && product.ingredients.length > 0) {
+    const texts = product.ingredients
+      .map((ing) => ing.text)
+      .filter((t): t is string => !!t && t.trim().length > 0);
+    if (texts.length > 0) {
+      return texts.join(', ');
+    }
+  }
+
+  return undefined;
 }
 
 // Helper to get vegan status from OFF product

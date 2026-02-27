@@ -59,17 +59,29 @@ export async function extractIngredientsFromImage(imageUri: string): Promise<OCR
               },
               {
                 type: 'text',
-                text: `Analyze this product ingredient list image. Extract and return:
-1. The product name (if visible)
-2. The complete list of ingredients exactly as written
+                text: `You are an expert OCR system specialized in reading product ingredient lists from photos. Your job is to extract ingredients even from challenging images.
+
+IMPORTANT GUIDELINES:
+- The text may be on a CURVED surface (bottles, cans, jars) - this is normal, still read it
+- The text may be SMALL - zoom in mentally and read carefully
+- The background may have TEXTURE or PATTERNS - focus on the text layer
+- The image may be slightly BLURRY or at an ANGLE - do your best
+- Some text may be PARTIALLY OBSCURED - extract what you can see
+- Text may be in ALL CAPS, mixed case, or stylized fonts - normalize it
+- If you can read MOST ingredients but not all, return what you can read
+- Only return an error if the image contains NO readable ingredient text at all
+
+Extract and return:
+1. The product name (if visible anywhere on the packaging)
+2. The complete list of ingredients, comma-separated
 
 Format your response as JSON:
 {
   "productName": "Product Name Here or null if not visible",
-  "ingredients": "Complete ingredient list as a single string, comma-separated"
+  "ingredients": "ingredient1, ingredient2, ingredient3, ..."
 }
 
-If you cannot read the ingredients clearly, return:
+ONLY if the image contains absolutely no readable ingredient text (e.g. wrong side of package, not a product, completely illegible), return:
 {
   "error": "Could not read ingredients from image"
 }

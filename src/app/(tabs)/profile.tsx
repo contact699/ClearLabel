@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert, Linking, Switch, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -98,6 +98,8 @@ function FlagToggle({
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
+  const settingsSectionY = useRef(0);
   const profile = useUserStore((s) => s.profile);
   const tier = useSubscriptionStore((s) => s.tier);
   const scansThisMonth = useSubscriptionStore((s) => s.scansThisMonth);
@@ -422,14 +424,20 @@ export default function ProfileScreen() {
       />
 
       <SafeAreaView className="flex-1" edges={['top']}>
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+        <ScrollView ref={scrollRef} className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
           {/* Header */}
           <Animated.View entering={FadeInDown.delay(50).springify()} className="px-6 pt-4 pb-2">
             <View className="flex-row items-center justify-between">
               <Text className="text-2xl font-bold text-slate-900">Profile</Text>
-              <View className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-slate-100">
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  scrollRef.current?.scrollTo({ y: settingsSectionY.current, animated: true });
+                }}
+                className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-slate-100 active:bg-slate-50"
+              >
                 <Settings size={22} color={COLORS.brandGreen} />
-              </View>
+              </Pressable>
             </View>
           </Animated.View>
 
@@ -752,7 +760,7 @@ export default function ProfileScreen() {
           </View>
 
           {/* Settings Section */}
-          <View className="px-6 mt-6">
+          <View className="px-6 mt-6" onLayout={(e) => { settingsSectionY.current = e.nativeEvent.layout.y; }}>
             <Text className="text-lg font-bold text-slate-900 mb-4">Settings</Text>
             <View className="bg-white rounded-2xl overflow-hidden border border-slate-100">
               <SettingsRow icon={<Bell size={20} color={COLORS.brandGreen} />} label="Notifications" onPress={handleNotifications} />
