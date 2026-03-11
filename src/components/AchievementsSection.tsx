@@ -17,7 +17,7 @@ export function AchievementsSection({ onViewAll }: AchievementsSectionProps) {
   const streakFreezes = useStreakStore((s) => s.streakFreezes);
   const milestones = useStreakStore((s) => s.milestones);
 
-  const achievedCount = milestones.length;
+  const achievedCount = Object.keys(milestones).length;
   const totalMilestones = MILESTONES.length;
 
   const handleViewAll = () => {
@@ -113,7 +113,7 @@ export function AchievementsSection({ onViewAll }: AchievementsSectionProps) {
 
         <View className="flex-row flex-wrap">
           {MILESTONES.map((milestone, index) => {
-            const achieved = milestones.includes(milestone.id);
+            const achieved = !!milestones[milestone.id];
             return (
               <View
                 key={milestone.id}

@@ -54,18 +54,26 @@ function normalizeIngredientName(name: string): string {
     .trim();
 }
 
-// Check if ingredient matches a flag
+// Escape special regex characters
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Check if ingredient matches a flag using word-boundary-aware matching
 function matchesFlag(ingredient: string, flag: IngredientFlag): boolean {
   const ingredientLower = ingredient.toLowerCase();
   const flagValue = flag.value.toLowerCase();
 
-  // Direct match
-  if (ingredientLower.includes(flagValue)) return true;
+  // Word boundary match - "egg" matches "egg", "eggs" but NOT "eggplant"
+  const wordBoundaryPattern = new RegExp(`\\b${escapeRegex(flagValue)}(s|es)?\\b`, 'i');
+
+  if (wordBoundaryPattern.test(ingredientLower)) return true;
 
   // Check against known synonyms
   const synonyms = INGREDIENT_SYNONYMS[flagValue] || [];
   for (const synonym of synonyms) {
-    if (ingredientLower.includes(synonym.toLowerCase())) return true;
+    const synonymPattern = new RegExp(`\\b${escapeRegex(synonym)}(s|es)?\\b`, 'i');
+    if (synonymPattern.test(ingredientLower)) return true;
   }
 
   return false;

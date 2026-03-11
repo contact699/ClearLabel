@@ -35,6 +35,9 @@ export async function extractIngredientsFromImage(imageUri: string): Promise<OCR
     const mimeType = imageUri.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
 
     // Send to Claude Vision API
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -42,6 +45,7 @@ export async function extractIngredientsFromImage(imageUri: string): Promise<OCR
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
+      signal: controller.signal,
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1024,
@@ -94,6 +98,8 @@ Only return the JSON, no other text.`,
       }),
     });
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('Claude API error:', errorData);
@@ -127,6 +133,14 @@ Only return the JSON, no other text.`,
         };
       }
 
+      // Validate response has required fields
+      if (!parsed.ingredients || typeof parsed.ingredients !== 'string' || parsed.ingredients.trim().length === 0) {
+        return {
+          success: false,
+          error: 'Could not extract ingredients from the image. Please try a clearer photo.',
+        };
+      }
+
       return {
         success: true,
         productName: parsed.productName || undefined,
@@ -141,6 +155,12 @@ Only return the JSON, no other text.`,
     }
   } catch (error) {
     console.error('OCR error:', error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        success: false,
+        error: 'Request timed out. Please check your connection and try again.',
+      };
+    }
     return {
       success: false,
       error: 'Failed to process image. Please check your connection and try again.',

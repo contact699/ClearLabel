@@ -181,7 +181,11 @@ export default function HistoryScreen() {
 
   const handleAddToCompare = useCallback((product: ScannedProduct) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    addToCompare(product);
+    const result = addToCompare(product);
+
+    if (result.replaced) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    }
 
     if (canCompare()) {
       router.push('/compare');

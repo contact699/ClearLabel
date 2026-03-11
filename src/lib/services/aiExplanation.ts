@@ -118,6 +118,9 @@ Guidelines:
 - Keep total response under 250 words
 - Format with clear headings and line breaks`;
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -125,6 +128,7 @@ Guidelines:
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
+      signal: controller.signal,
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 500,
@@ -136,14 +140,14 @@ Guidelines:
         ],
       }),
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('Claude API error:', response.status, errorData);
-      const errorMsg = errorData?.error?.message || `API error: ${response.status}`;
       return {
         success: false,
-        error: errorMsg,
+        error: 'Failed to generate explanation. Please try again.',
       };
     }
 
@@ -163,6 +167,12 @@ Guidelines:
     };
   } catch (error) {
     console.error('AI explanation error:', error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        success: false,
+        error: 'Request timed out. Please check your connection and try again.',
+      };
+    }
     return {
       success: false,
       error: 'Failed to generate explanation. Please check your connection.',

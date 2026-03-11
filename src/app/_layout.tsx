@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { AppState } from 'react-native';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -33,7 +34,7 @@ function RootLayoutNav({ colorScheme }: { colorScheme: 'light' | 'dark' | null |
     });
 
     // Check streak status on app launch
-    const checkStreak = async () => {
+    const runStreakCheck = async () => {
       const { freezeUsed, streakLost, previousStreak } = checkAndUpdateStreak();
 
       // Request notification permissions if not already granted
@@ -54,7 +55,16 @@ function RootLayoutNav({ colorScheme }: { colorScheme: 'light' | 'dark' | null |
       }
     };
 
-    checkStreak();
+    runStreakCheck();
+
+    // Also check when app comes back to foreground (e.g. next day)
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        checkAndUpdateStreak();
+      }
+    });
+
+    return () => subscription.remove();
   }, []);
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

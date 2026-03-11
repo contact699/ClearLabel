@@ -18,7 +18,7 @@ interface SubscriptionState {
   tier: SubscriptionTier;
   isLoading: boolean;
   scansThisMonth: number;
-  lastScanReset: Date | null;
+  lastScanReset: string | null; // ISO string
   offerings: PurchasesOffering | null;
   isInitialized: boolean;
 
@@ -37,6 +37,13 @@ interface SubscriptionState {
 }
 
 const FREE_SCAN_LIMIT = 20;
+
+function isNewMonth(lastReset: string | null): boolean {
+  if (!lastReset) return true;
+  const last = new Date(lastReset);
+  const now = new Date();
+  return last.getMonth() !== now.getMonth() || last.getFullYear() !== now.getFullYear();
+}
 
 export const useSubscriptionStore = create<SubscriptionState>()(
   persist(
@@ -115,16 +122,10 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       incrementScans: () => {
         const state = get();
 
-        // Check if we need to reset monthly scans
-        const now = new Date();
-        const lastReset = state.lastScanReset ? new Date(state.lastScanReset) : null;
-
-        if (!lastReset ||
-            lastReset.getMonth() !== now.getMonth() ||
-            lastReset.getFullYear() !== now.getFullYear()) {
+        if (isNewMonth(state.lastScanReset)) {
           set({
             scansThisMonth: 1,
-            lastScanReset: now
+            lastScanReset: new Date().toISOString(),
           });
         } else {
           set({ scansThisMonth: state.scansThisMonth + 1 });
@@ -132,40 +133,20 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       },
 
       resetMonthlyScans: () => {
-        set({ scansThisMonth: 0, lastScanReset: new Date() });
+        set({ scansThisMonth: 0, lastScanReset: new Date().toISOString() });
       },
 
       canScan: () => {
         const state = get();
         if (state.tier === 'pro') return true;
-
-        // Check if we need to reset monthly scans
-        const now = new Date();
-        const lastReset = state.lastScanReset ? new Date(state.lastScanReset) : null;
-
-        if (!lastReset ||
-            lastReset.getMonth() !== now.getMonth() ||
-            lastReset.getFullYear() !== now.getFullYear()) {
-          return true; // New month, reset count
-        }
-
+        if (isNewMonth(state.lastScanReset)) return true;
         return state.scansThisMonth < FREE_SCAN_LIMIT;
       },
 
       getRemainingScans: () => {
         const state = get();
         if (state.tier === 'pro') return Infinity;
-
-        // Check if we need to reset monthly scans
-        const now = new Date();
-        const lastReset = state.lastScanReset ? new Date(state.lastScanReset) : null;
-
-        if (!lastReset ||
-            lastReset.getMonth() !== now.getMonth() ||
-            lastReset.getFullYear() !== now.getFullYear()) {
-          return FREE_SCAN_LIMIT; // New month
-        }
-
+        if (isNewMonth(state.lastScanReset)) return FREE_SCAN_LIMIT;
         return Math.max(0, FREE_SCAN_LIMIT - state.scansThisMonth);
       },
 

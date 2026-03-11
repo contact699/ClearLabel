@@ -33,7 +33,7 @@ const FEATURES = [
 
 export default function PaywallScreen() {
   const router = useRouter();
-  const [selectedPackageId, setSelectedPackageId] = useState<string | null>('annual');
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   
   const isLoading = useSubscriptionStore((s) => s.isLoading);
   const offerings = useSubscriptionStore((s) => s.offerings);
@@ -54,13 +54,9 @@ export default function PaywallScreen() {
 
   // Select annual by default, or first package
   useEffect(() => {
-    if (packages.length > 0 && selectedPackageId === 'annual') {
+    if (packages.length > 0 && !selectedPackageId) {
       const annual = packages.find(p => p.packageType === PACKAGE_TYPE.ANNUAL);
-      if (annual) {
-        setSelectedPackageId(annual.identifier);
-      } else if (packages[0]) {
-        setSelectedPackageId(packages[0].identifier);
-      }
+      setSelectedPackageId(annual?.identifier || packages[0]?.identifier || null);
     }
   }, [packages]);
 
@@ -83,6 +79,7 @@ export default function PaywallScreen() {
 
     // If no real packages, show setup message
     if (!selectedPackage) {
+      if (isLoading) return; // Still loading packages
       Alert.alert(
         'Setup Required',
         'To enable purchases:\n\n1. Create a RevenueCat account\n2. Add your API keys to .env\n3. Create products in App Store Connect\n4. Configure offerings in RevenueCat',
@@ -92,12 +89,12 @@ export default function PaywallScreen() {
     }
 
     const result = await purchase(selectedPackage);
-    
+
     if (result.success) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } else if (result.error && result.error !== 'cancelled') {
-      Alert.alert('Purchase Failed', result.error);
+      Alert.alert('Something Went Wrong', 'We couldn\'t complete your purchase. Please try again.');
     }
   };
 
@@ -172,8 +169,8 @@ export default function PaywallScreen() {
                 }}
                 className={cn(
                   'flex-1 rounded-2xl p-4 border-2',
-                  (selectedPackageId === 'monthly' || selectedPackage?.packageType === PACKAGE_TYPE.MONTHLY)
-                    ? 'bg-white border-teal-500' 
+                  selectedPackage?.packageType === PACKAGE_TYPE.MONTHLY
+                    ? 'bg-white border-teal-500'
                     : 'bg-white/90 border-transparent'
                 )}
               >
@@ -193,8 +190,8 @@ export default function PaywallScreen() {
                 }}
                 className={cn(
                   'flex-1 rounded-2xl p-4 border-2',
-                  (selectedPackageId === 'annual' || selectedPackage?.packageType === PACKAGE_TYPE.ANNUAL)
-                    ? 'bg-white border-teal-500' 
+                  (selectedPackage?.packageType === PACKAGE_TYPE.ANNUAL || !selectedPackage)
+                    ? 'bg-white border-teal-500'
                     : 'bg-white/90 border-transparent'
                 )}
               >

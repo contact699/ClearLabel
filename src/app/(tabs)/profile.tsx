@@ -111,6 +111,7 @@ export default function ProfileScreen() {
   const familyProfiles = useFamilyProfilesStore((s) => s.profiles);
   const activeProfileId = useFamilyProfilesStore((s) => s.activeProfileId);
   const getProfileColor = useFamilyProfilesStore((s) => s.getProfileColor);
+  const canCreateMoreProfiles = useFamilyProfilesStore((s) => s.profiles.length < 8);
 
   const [showNameModal, setShowNameModal] = useState(false);
   const [editName, setEditName] = useState(profile?.name || '');
@@ -526,7 +527,7 @@ export default function ProfileScreen() {
                   <Link size={14} color={COLORS.textSecondary} />
                   <Text className="text-slate-600 font-semibold ml-1 text-sm">Join</Text>
                 </Pressable>
-                {useFamilyProfilesStore.getState().canCreateMore() && (
+                {canCreateMoreProfiles && (
                   <Pressable
                     onPress={openNewProfileModal}
                     className="flex-row items-center bg-teal-50 rounded-xl px-3 py-2"

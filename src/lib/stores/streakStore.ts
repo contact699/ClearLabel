@@ -30,7 +30,7 @@ interface StreakState {
   streakFreezes: number; // 0-2
   freezeUsedThisWeek: boolean;
   weekStartDate: string | null;
-  milestones: string[]; // Array of achieved milestone IDs
+  milestones: Record<string, string>; // Map of milestone ID -> achieved date (YYYY-MM-DD)
   scannedToday: boolean;
   pendingMilestone: MilestoneProgress | null; // For showing celebration modal
 
@@ -75,7 +75,7 @@ export const useStreakStore = create<StreakState>()(
       streakFreezes: 1, // Start with 1 freeze
       freezeUsedThisWeek: false,
       weekStartDate: null,
-      milestones: [],
+      milestones: {},
       scannedToday: false,
       pendingMilestone: null,
 
@@ -98,19 +98,15 @@ export const useStreakStore = create<StreakState>()(
         } else if (state.lastScanDate === yesterday) {
           // Scanned yesterday, continue streak
           newStreak = state.currentStreak + 1;
-        } else if (state.lastScanDate === today) {
-          // Already scanned today (shouldn't reach here, but safety check)
-          return null;
         } else {
-          // Missed day(s) - this case should be handled by checkAndUpdateStreak
-          // but if we get here, start fresh
+          // Missed day(s) - start fresh
           newStreak = 1;
         }
 
         // Check for new milestone
         let newMilestone: MilestoneProgress | null = null;
         for (const milestone of MILESTONES) {
-          if (newStreak >= milestone.daysRequired && !state.milestones.includes(milestone.id)) {
+          if (newStreak >= milestone.daysRequired && !state.milestones[milestone.id]) {
             newMilestone = {
               ...milestone,
               achieved: true,
@@ -128,7 +124,7 @@ export const useStreakStore = create<StreakState>()(
           lastScanDate: today,
           scannedToday: true,
           milestones: newMilestone
-            ? [...state.milestones, newMilestone.id]
+            ? { ...state.milestones, [newMilestone.id]: today }
             : state.milestones,
           pendingMilestone: newMilestone,
         });
@@ -146,13 +142,14 @@ export const useStreakStore = create<StreakState>()(
         let streakLost = false;
         const previousStreak = state.currentStreak;
 
-        // Check for week rollover - grant new freeze
+        // Check for week rollover - only grant freeze if user has an active streak
         if (state.weekStartDate !== currentWeekStart) {
-          const newFreezeCount = Math.min(state.streakFreezes + 1, 2);
           set({
             weekStartDate: currentWeekStart,
             freezeUsedThisWeek: false,
-            streakFreezes: newFreezeCount,
+            streakFreezes: state.currentStreak > 0
+              ? Math.min(state.streakFreezes + 1, 2)
+              : state.streakFreezes,
           });
         }
 
@@ -169,8 +166,13 @@ export const useStreakStore = create<StreakState>()(
 
         // If lastScanDate is older than yesterday and we have a streak
         if (state.lastScanDate !== null && state.currentStreak > 0) {
-          // Try to use a freeze
-          if (state.streakFreezes > 0 && !state.freezeUsedThisWeek) {
+          // Calculate how many days were missed
+          const lastScan = new Date(state.lastScanDate + 'T00:00:00');
+          const todayDate = new Date(today + 'T00:00:00');
+          const daysMissed = Math.floor((todayDate.getTime() - lastScan.getTime()) / (1000 * 60 * 60 * 24)) - 1;
+
+          // Freeze can only cover exactly 1 missed day
+          if (daysMissed === 1 && state.streakFreezes > 0 && !state.freezeUsedThisWeek) {
             set({
               streakFreezes: state.streakFreezes - 1,
               freezeUsedThisWeek: true,
@@ -178,7 +180,7 @@ export const useStreakStore = create<StreakState>()(
             });
             freezeUsed = true;
           } else {
-            // No freeze available, lose streak
+            // Gap too large or no freeze available - lose streak
             set({
               currentStreak: 0,
               scannedToday: false,
@@ -198,8 +200,8 @@ export const useStreakStore = create<StreakState>()(
         const state = get();
         return MILESTONES.map((m) => ({
           ...m,
-          achieved: state.milestones.includes(m.id),
-          achievedDate: state.milestones.includes(m.id) ? undefined : undefined,
+          achieved: !!state.milestones[m.id],
+          achievedDate: state.milestones[m.id] || undefined,
         }));
       },
 
@@ -211,7 +213,7 @@ export const useStreakStore = create<StreakState>()(
           streakFreezes: 1,
           freezeUsedThisWeek: false,
           weekStartDate: null,
-          milestones: [],
+          milestones: {},
           scannedToday: false,
           pendingMilestone: null,
         });
@@ -228,6 +230,7 @@ export const useStreakStore = create<StreakState>()(
         freezeUsedThisWeek: state.freezeUsedThisWeek,
         weekStartDate: state.weekStartDate,
         milestones: state.milestones,
+        scannedToday: state.scannedToday,
       }),
     }
   )

@@ -9,7 +9,7 @@ interface CompareState {
   // Actions
   setProductA: (product: ScannedProduct | null) => void;
   setProductB: (product: ScannedProduct | null) => void;
-  addToCompare: (product: ScannedProduct) => boolean; // returns true if added
+  addToCompare: (product: ScannedProduct) => { added: boolean; replaced: boolean; replacedName?: string };
   removeFromCompare: (productId: string) => void;
   clearCompare: () => void;
   isInCompare: (productId: string) => boolean;
@@ -34,23 +34,24 @@ export const useCompareStore = create<CompareState>()((set, get) => ({
 
     // Check if already in compare
     if (state.productA?.id === product.id || state.productB?.id === product.id) {
-      return false;
+      return { added: false, replaced: false };
     }
 
     // Add to first empty slot
     if (!state.productA) {
       set({ productA: product });
-      return true;
+      return { added: true, replaced: false };
     }
 
     if (!state.productB) {
       set({ productB: product });
-      return true;
+      return { added: true, replaced: false };
     }
 
     // Both slots full - replace product B
+    const replacedName = state.productB.name;
     set({ productB: product });
-    return true;
+    return { added: true, replaced: true, replacedName };
   },
 
   removeFromCompare: (productId) => {

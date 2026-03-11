@@ -508,10 +508,18 @@ export default function ScanScreen() {
   };
 
   const handleManualSubmit = () => {
-    if (manualBarcode.trim().length > 0) {
+    const trimmed = manualBarcode.trim();
+    if (trimmed.length === 0) return;
+
+    const validation = validateBarcode(trimmed);
+    if (!validation.isValid) {
       setShowManualEntry(false);
-      processBarcode(manualBarcode.trim());
+      setError(validation.error || 'Invalid barcode format. Please check and try again.');
+      return;
     }
+
+    setShowManualEntry(false);
+    processBarcode(validation.normalizedBarcode || trimmed);
   };
 
   const resetScanner = () => {

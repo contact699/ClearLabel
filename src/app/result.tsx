@@ -301,9 +301,9 @@ export default function ResultScreen() {
         barcode,
         name: getDisplayName(offProduct),
         brand: offProduct.brands || undefined,
-        imageUrl: offProduct.image_front_url || offProduct.image_url,
+        imageURL: offProduct.image_front_url || offProduct.image_url,
         ingredients: analysisResult.parsedIngredients,
-        ingredientsText,
+        rawIngredients: ingredientsText || '',
         allergens,
         additives,
         nutriscoreGrade,
@@ -311,7 +311,7 @@ export default function ResultScreen() {
         nutritionData: getNutritionData(offProduct),
         healthRating,
         category: product?.category || 'food',
-        dataSource: 'api' as DataSource,
+        source: result.source as DataSource,
         scannedAt: new Date(),
         veganStatus,
         vegetarianStatus,
@@ -431,7 +431,11 @@ export default function ResultScreen() {
   const handleAddToCompare = () => {
     if (!product) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    addToCompare(product);
+    const result = addToCompare(product);
+
+    if (result.replaced) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    }
 
     if (canCompare()) {
       router.push('/compare');

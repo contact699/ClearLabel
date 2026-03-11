@@ -129,7 +129,7 @@ export function StreakCard({ onPress }: StreakCardProps) {
           {/* Milestone Icons */}
           <View className="flex-row items-center justify-between mb-3">
             {MILESTONES.slice(0, 6).map((milestone) => {
-              const achieved = milestones.includes(milestone.id);
+              const achieved = !!milestones[milestone.id];
               return (
                 <View
                   key={milestone.id}

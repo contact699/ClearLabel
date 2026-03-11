@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -63,6 +63,7 @@ export default function ShoppingListScreen() {
   const [newListName, setNewListName] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showChecked, setShowChecked] = useState(true);
 
   // Get or create default list
@@ -73,9 +74,15 @@ export default function ShoppingListScreen() {
   const checkedItems = activeList?.items.filter((i) => i.isChecked) || [];
 
   const onRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
     setRefreshing(true);
     // Simulate refresh - in future this would sync with cloud
-    setTimeout(() => setRefreshing(false), 500);
+    refreshTimeoutRef.current = setTimeout(() => {
+      setRefreshing(false);
+      refreshTimeoutRef.current = null;
+    }, 500);
   }, []);
 
   const handleAddItem = () => {

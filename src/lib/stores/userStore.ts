@@ -52,7 +52,11 @@ export const useUserStore = create<UserState>()(
       },
 
       updateProfileName: (name) => {
-        const profile = get().profile;
+        let profile = get().profile;
+        if (!profile) {
+          get().initializeProfile();
+          profile = get().profile;
+        }
         if (!profile) return;
         set({
           profile: {
@@ -64,7 +68,11 @@ export const useUserStore = create<UserState>()(
       },
 
       addFlag: (type, value, displayName) => {
-        const profile = get().profile;
+        let profile = get().profile;
+        if (!profile) {
+          get().initializeProfile();
+          profile = get().profile;
+        }
         if (!profile) return;
 
         // Check if flag already exists
@@ -91,7 +99,11 @@ export const useUserStore = create<UserState>()(
       },
 
       removeFlag: (flagId) => {
-        const profile = get().profile;
+        let profile = get().profile;
+        if (!profile) {
+          get().initializeProfile();
+          profile = get().profile;
+        }
         if (!profile) return;
 
         set({
@@ -104,7 +116,11 @@ export const useUserStore = create<UserState>()(
       },
 
       toggleFlag: (flagId) => {
-        const profile = get().profile;
+        let profile = get().profile;
+        if (!profile) {
+          get().initializeProfile();
+          profile = get().profile;
+        }
         if (!profile) return;
 
         set({
@@ -119,7 +135,11 @@ export const useUserStore = create<UserState>()(
       },
 
       setFlagActive: (flagId, isActive) => {
-        const profile = get().profile;
+        let profile = get().profile;
+        if (!profile) {
+          get().initializeProfile();
+          profile = get().profile;
+        }
         if (!profile) return;
 
         set({
@@ -134,7 +154,11 @@ export const useUserStore = create<UserState>()(
       },
 
       completeOnboarding: () => {
-        const profile = get().profile;
+        let profile = get().profile;
+        if (!profile) {
+          get().initializeProfile();
+          profile = get().profile;
+        }
         if (!profile) return;
 
         set({
@@ -153,7 +177,11 @@ export const useUserStore = create<UserState>()(
       },
 
       updateNotificationPreferences: (prefs) => {
-        const profile = get().profile;
+        let profile = get().profile;
+        if (!profile) {
+          get().initializeProfile();
+          profile = get().profile;
+        }
         if (!profile) return;
 
         const currentPrefs = profile.notificationPreferences || DEFAULT_NOTIFICATION_PREFERENCES;
