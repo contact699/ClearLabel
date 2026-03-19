@@ -1,153 +1,96 @@
-<stack>
-  Expo SDK 53, React Native 0.76.7, bun (not npm).
-  React Query for server/async state.
-  NativeWind + Tailwind v3 for styling.
-  react-native-reanimated v3 for animations (preferred over Animated from react-native).
-  react-native-gesture-handler for gestures.
-  lucide-react-native for icons.
-  All packages are pre-installed. DO NOT install new packages unless they are @expo-google-font packages or pure JavaScript helpers like lodash, dayjs, etc.
-</stack>
+# CLAUDE.md
 
-<structure>
-  src/app/          — Expo Router file-based routes (src/app/_layout.tsx is root). Add new screens to this folder.
-  src/components/   — Reusable UI components. Add new components to this folder.
-  src/lib/          — Utilities: cn.ts (className merge), example-context.ts (state pattern)
-</structure>
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-<typescript>
-  Explicit type annotations for useState: `useState<Type[]>([])` not `useState([])`
-  Null/undefined handling: use optional chaining `?.` and nullish coalescing `??`
-  Include ALL required properties when creating objects — TypeScript strict mode is enabled.
-</typescript>
+## Commands
 
-<environment>
-  You are in Vibecode. The system manages git and the dev server (port 8081).
-  DO NOT: manage git, touch the dev server, or check its state.
-  The user views the app through Vibecode App.
-  The user cannot see the code or interact with the terminal. Do not tell the user to do anything with the code or terminal.
-  You can see logs in the expo.log file.
-  The Vibecode App has tabs like ENV tab, API tab, LOGS tab. You can ask the user to use these tabs to view the logs, add enviroment variables, or give instructions for APIs like OpenAI, Nanobanana, Grok, Elevenlabs, etc. but first try to implement the functionality yourself.
-  The user is likely non-technical, communicate with them in an easy to understand manner.
-  If the user's request is vague or ambitious, scope down to specific functionality. Do everything for them.
-  For images, use URLs from unsplash.com. You can also tell the user they can use the IMAGES tab to generate and uplooad images.
-</environment>
+```bash
+bun start              # Start Expo dev server
+bun run ios            # Run on iOS
+bun run android        # Run on Android
+bun run web            # Run on web (with dark mode class support)
+bun run lint           # ESLint (expo lint)
+bun run typecheck      # TypeScript check (tsc --noEmit)
+```
 
+Use `bun`, not `npm`. All packages are pre-installed — do NOT install new packages unless they are `@expo-google-fonts/*` or pure JS helpers (lodash, dayjs, etc.).
 
-<forbidden_files>
-  Do not edit: patches/, babel.config.js, metro.config.js, app.json, tsconfig.json, nativewind-env.d.ts
-</forbidden_files>
+## Architecture
 
-<routing>
-  Expo Router for file-based routing. Every file in src/app/ becomes a route.
-  Never delete or refactor RootLayoutNav from src/app/_layout.tsx.
-  
-  <stack_router>
-    src/app/_layout.tsx (root layout), src/app/index.tsx (matches '/'), src/app/settings.tsx (matches '/settings')
-    Use <Stack.Screen options={{ title, headerStyle, ... }} /> inside pages to customize headers.
-  </stack_router>
-  
-  <tabs_router>
-    Only files registered in src/app/(tabs)/_layout.tsx become actual tabs.
-    Unregistered files in (tabs)/ are routes within tabs, not separate tabs.
-    Nested stacks create double headers — remove header from tabs, add stack inside each tab.
-    At least 2 tabs or don't use tabs at all — single tab looks bad.
-  </tabs_router>
-  
-  <router_selection>
-    Games should avoid tabs — use full-screen stacks instead.
-    For full-screen overlays/modals outside tabs: create route in src/app/ (not src/app/(tabs)/), 
-    then add `<Stack.Screen name="page" options={{ presentation: "modal" }} />` in src/app/_layout.tsx.
-  </router_selection>
-  
-  <rules>
-    Only ONE route can map to "/" — can't have both src/app/index.tsx and src/app/(tabs)/index.tsx.
-    Dynamic params: use `const { id } = useLocalSearchParams()` from expo-router.
-  </rules>
-</routing>
+**ClearLabel** is an ingredient-scanning mobile app (Expo SDK 53, React Native 0.79.6). Users scan barcodes or photograph ingredient labels to check products against personal dietary flags/allergens.
 
-<state>
-  React Query for server/async state. Always use object API: `useQuery({ queryKey, queryFn })`.
-  Never wrap RootLayoutNav directly.
-  React Query provider must be outermost; nest other providers inside it.
-  
-  Use `useMutation` for async operations — no manual `setIsLoading` patterns.
-  Wrap third-party lib calls (RevenueCat, etc.) in useQuery/useMutation for consistent loading states.
-  Reuse query keys across components to share cached data — don't create duplicate providers.
-  
-  For local state, use Zustand. However, most state is server state, so use React Query for that.
-  Always use a selector with Zustand to subscribe only to the specific slice of state you need (e.g., useStore(s => s.foo)) rather than the whole store to prevent unnecessary re-renders. Make sure that the value returned by the selector is a primitive. Do not execute store methods in selectors; select data/functions, then compute outside the selector.
-  For persistence: use AsyncStorage inside context hook providers. Only persist necessary data.
-  Split ephemeral from persisted state to avoid hydration bugs.
-</state>
+### Data Flow
 
-<safearea>
-  Import from react-native-safe-area-context, NOT from react-native.
-  Skip SafeAreaView inside tab stacks with navigation headers.
-  Skip when using native headers from Stack/Tab navigator.
-  Add when using custom/hidden headers.
-  For games: use useSafeAreaInsets hook instead.
-</safearea>
+1. User scans barcode → `openFoodFacts.ts` queries 4 databases (Food, Beauty, Pet Food, Products)
+2. If barcode not found → `ocr.ts` sends photo to OpenAI Vision API for text extraction
+3. `ingredientMatcher.ts` analyzes ingredients against user's flags (word-boundary regex + synonym DB)
+4. `aiExplanation.ts` calls Claude API for health verdict, flagged ingredients, allergen warnings
+5. Product saved to `historyStore`, streak updated in `streakStore`, scan count decremented in `subscriptionStore`
 
-<data>
-  Create realistic mock data when you lack access to real data.
-  For image analysis: actually send to LLM don't mock.
-</data>
+### State Management
 
-<design>
-  Don't hold back. This is mobile — design for touch, thumb zones, glanceability.
-  Inspiration: iOS, Instagram, Airbnb, Coinbase, polished habit trackers.
+- **Server/async state**: React Query (`useQuery`/`useMutation` with object API). Provider is outermost in `_layout.tsx`.
+- **Local persistent state**: Zustand stores in `src/lib/stores/` with AsyncStorage persistence:
+  - `userStore` — profile, ingredient flags, onboarding status
+  - `subscriptionStore` — RevenueCat tier, scan limits (free: 20/month, pro: unlimited)
+  - `historyStore` — scanned products collection
+  - `streakStore` — daily streak, freezes (0-2), milestones at 3/7/14/30/60/100 days
+  - `compareStore` — two products for side-by-side comparison
+  - `familyProfilesStore` — multiple user profiles with independent flags
+  - `shoppingListStore` — shopping lists with checked/unchecked items
 
-  <avoid>
-    Purple gradients on white, generic centered layouts, predictable patterns.
-    Web-like designs on mobile. Overused fonts (Space Grotesk, Inter).
-  </avoid>
+**Zustand selector rule**: Always use `useStore(s => s.field)` with primitive return values. Never subscribe to the whole store.
 
-  <do>
-    Cohesive themes with dominant colors and sharp accents.
-    High-impact animations: progress bars, button feedback, haptics.
-    Depth via gradients and patterns, not flat solids.
-    Install `@expo-google-fonts/{font-name}` for fonts (eg: `@expo-google-fonts/inter`)
-    Use zeego for context menus and dropdowns (native feel). Lookup the documentation on zeego.dev to see how to use it.
-  </do>
-</design>
+### Navigation (Expo Router)
 
-<mistakes>
-  <styling>
-    Use Nativewind for styling. Use cn() helper from src/lib/cn.ts to merge classNames when conditionally applying classNames or passing classNames via props.
-    CameraView, LinearGradient, and Animated components DO NOT support className. Use inline style prop.
-    Horizontal ScrollViews will expand vertically to fill flex containers. Add `style={{ flexGrow: 0 }}` to constrain height to content.
-  </styling>
+- Root: `src/app/_layout.tsx` — Stack navigator wrapped in QueryClientProvider → GestureHandlerRootView → KeyboardProvider
+- 4 tabs in `src/app/(tabs)/`: Home, Scan, History, Profile
+- Modal/card routes at `src/app/` level: result, compare, shopping-list, insights, encyclopedia, family-profile, onboarding (fullScreenModal), paywall (modal)
+- Never delete or refactor `RootLayoutNav` from the root layout.
 
-  <camera>
-    Use CameraView from expo-camera, NOT the deprecated Camera import.
-    import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-    Use style={{ flex: 1 }}, not className.
-    Overlay UI must be absolute positioned inside CameraView.
-  </camera>
+### Services (`src/lib/services/`)
 
-  <react_native>
-    No Node.js buffer in React Native — don't import from 'buffer'.
-  </react_native>
+- `openFoodFacts.ts` — product lookup across 4 Open*Facts databases with retry/timeout
+- `ingredientMatcher.ts` — flag matching with synonym expansion
+- `ocr.ts` — OpenAI Vision API for ingredient photo extraction
+- `aiExplanation.ts` — Claude API for product health analysis
+- `purchases.ts` — RevenueCat subscription wrapper
+- `alternatives.ts` — healthier product suggestions from OpenFoodFacts
+- `notifications.ts` — streak and push notifications
 
-  <ux>
-    Use Pressable over TouchableOpacity.
-    Use custom modals, not Alert.alert().
-    Ensure keyboard is dismissable and doesn't obscure inputs. This is much harder to implement than it seems. You can use the react-native-keyboard-controller package to help with this. But, make sure to look up the documentation before implementing.
-  </ux>
+### Design System (`src/lib/constants.ts`)
 
-  <outdated_knowledge>
-    Your react-native-reanimated and react-native-gesture-handler training may be outdated. Look up current docs before implementing.
-  </outdated_knowledge>
-</mistakes>
+Brand green `#0D9488`. Status colors: green (safe), yellow (caution), orange (warning), red (alert). Custom spacing scale and corner radii. `INGREDIENT_SYNONYMS` maps allergens to aliases. `INGREDIENT_EDUCATION` has 20+ ingredient entries.
 
-<appstore>
-  Cannot assist with App Store or Google Play submission processes (app.json, eas.json, EAS CLI commands).
-  For submission help, click "Share" on the top right corner on the Vibecode App and select "Submit to App Store".
-</appstore> 
+## Key Rules
 
-<skills>
-You have access to a few skills in the `.claude/skills` folder. Use them to your advantage.
-- ai-apis-like-chatgpt: Use this skill when the user asks you to make an app that requires an AI API.
-- expo-docs: Use this skill when the user asks you to use an Expo SDK module or package that you might not know much about.
-- frontend-app-design: Use this skill when the user asks you to design a frontend app component or screen.
-</skills>
+### Forbidden Files
+Do not edit: `patches/`, `babel.config.js`, `metro.config.js`, `app.json`, `tsconfig.json`, `nativewind-env.d.ts`
+
+### TypeScript
+- Explicit type annotations for useState: `useState<Type[]>([])` not `useState([])`
+- Use `?.` and `??` for null/undefined handling
+- Strict mode is on — include ALL required properties when creating objects
+
+### Styling (NativeWind)
+- Use `cn()` from `src/lib/cn.ts` to merge conditional classNames
+- `CameraView`, `LinearGradient`, and `Animated` components do NOT support `className` — use inline `style` prop
+- Horizontal ScrollViews: add `style={{ flexGrow: 0 }}` to constrain height
+
+### Routing
+- Only files registered in `src/app/(tabs)/_layout.tsx` become tabs
+- Only ONE route can map to `/` — can't have both `src/app/index.tsx` and `src/app/(tabs)/index.tsx`
+- Modals outside tabs: create route in `src/app/`, add `<Stack.Screen name="page" options={{ presentation: "modal" }} />` in root layout
+- Dynamic params: `const { id } = useLocalSearchParams()` from expo-router
+
+### React Native Pitfalls
+- Use `CameraView` from `expo-camera`, NOT deprecated `Camera` import
+- Use `Pressable` over `TouchableOpacity`
+- No Node.js `buffer` in React Native
+- `react-native-reanimated` and `react-native-gesture-handler` docs may be newer than training data — look up current docs
+- SafeAreaView: import from `react-native-safe-area-context`, skip when using native navigation headers, add when using custom/hidden headers
+
+### State
+- React Query provider must be outermost; nest other providers inside
+- Use `useMutation` for async ops — no manual `setIsLoading` patterns
+- Wrap third-party lib calls in `useQuery`/`useMutation` for consistent loading states
