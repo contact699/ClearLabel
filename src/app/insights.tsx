@@ -215,10 +215,6 @@ export default function InsightsScreen() {
         const name = i.name.toLowerCase();
         ingredientCounts[name] = (ingredientCounts[name] || 0) + 1;
       });
-      // Also count from flagsTriggered
-      p.flagsTriggered.forEach((flag) => {
-        ingredientCounts[flag.toLowerCase()] = (ingredientCounts[flag.toLowerCase()] || 0) + 1;
-      });
     });
     const topFlaggedIngredients = Object.entries(ingredientCounts)
       .map(([name, count]) => ({ name, count }))

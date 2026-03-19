@@ -189,15 +189,17 @@ export default function HistoryScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
 
-    if (canCompare) {
+    // Read fresh state after addToCompare mutated the store
+    const store = useCompareStore.getState();
+    if (store.productA && store.productB) {
       router.push('/compare');
     }
-  }, [addToCompare, canCompare, router]);
+  }, [addToCompare, router]);
 
   const renderProduct = useCallback(({ item, index }: { item: ScannedProduct; index: number }) => {
     const status = getProductStatus(item);
     const statusConfig = getStatusConfig(status);
-    const inCompare = isInCompare(item.id);
+    const inCompare = productAId === item.id || productBId === item.id;
 
     return (
       <Animated.View
@@ -274,7 +276,7 @@ export default function HistoryScreen() {
         </Pressable>
       </Animated.View>
     );
-  }, [handleProductPress, handleDeleteProduct, handleAddToCompare, isInCompare]);
+  }, [handleProductPress, handleDeleteProduct, handleAddToCompare, productAId, productBId]);
 
   const renderSectionHeader = useCallback((title: string, count: number) => (
     <View className="flex-row items-center justify-between mb-3 mt-6">

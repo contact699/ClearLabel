@@ -90,7 +90,7 @@ export default function FamilyProfileScreen() {
   const params = useLocalSearchParams<{ profileId: string }>();
   const profileId = params.profileId;
 
-  const profile = useFamilyProfilesStore((s) => s.getProfileById(profileId || ''));
+  const profile = useFamilyProfilesStore((s) => s.profiles.find((p) => p.id === (profileId || '')));
   const getProfileColor = useFamilyProfilesStore((s) => s.getProfileColor);
   
   const [expandedSection, setExpandedSection] = useState<FlagType | null>(null);

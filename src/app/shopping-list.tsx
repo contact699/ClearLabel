@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -83,6 +83,14 @@ export default function ShoppingListScreen() {
       setRefreshing(false);
       refreshTimeoutRef.current = null;
     }, 500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
   }, []);
 
   const handleAddItem = () => {

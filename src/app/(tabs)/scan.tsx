@@ -272,6 +272,7 @@ export default function ScanScreen() {
   const [extractedIngredients, setExtractedIngredients] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const lastScannedRef = useRef<string | null>(null);
+  const processingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Reset scanner when screen comes back into focus (e.g. after viewing result)
   useFocusEffect(
@@ -281,11 +282,23 @@ export default function ScanScreen() {
       setCapturedImage(null);
       setShowSuccess(false);
       lastScannedRef.current = null;
+      return () => {
+        if (processingTimeoutRef.current) {
+          clearTimeout(processingTimeoutRef.current);
+          processingTimeoutRef.current = null;
+        }
+      };
     }, [])
   );
 
   const processBarcode = useCallback(async (barcode: string) => {
     if (isLoading || barcode === lastScannedRef.current) return;
+
+    // Check scan limit for free tier
+    if (!useSubscriptionStore.getState().canScan()) {
+      router.push('/paywall');
+      return;
+    }
 
     lastScannedRef.current = barcode;
     setIsScanning(false);
@@ -294,7 +307,7 @@ export default function ScanScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     // Delay to show success animation
-    setTimeout(async () => {
+    processingTimeoutRef.current = setTimeout(async () => {
       setIsLoading(true);
       setLoadingMessage('Looking up product...');
       setError(null);
@@ -461,6 +474,12 @@ export default function ScanScreen() {
 
   const handleConfirmOCR = () => {
     if (!extractedIngredients.trim() || !ocrProductName.trim()) return;
+
+    // Check scan limit for free tier
+    if (!useSubscriptionStore.getState().canScan()) {
+      router.push('/paywall');
+      return;
+    }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
