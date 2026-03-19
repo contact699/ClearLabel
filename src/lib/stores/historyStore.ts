@@ -29,7 +29,7 @@ export const useHistoryStore = create<HistoryState>()(
 
       addProduct: (product) => {
         set((state) => ({
-          products: [product, ...state.products],
+          products: [product, ...state.products].slice(0, 500),
         }));
       },
 

@@ -240,9 +240,12 @@ export const useFamilyProfilesStore = create<FamilyProfilesState>()(
               id: uuidv4(),
             }));
 
+            // Merge: add copied flags that don't already exist on target
+            const existingKeys = new Set(p.flags.map((f) => `${f.type}:${f.value}`));
+            const newFlags = copiedFlags.filter((f) => !existingKeys.has(`${f.type}:${f.value}`));
             return {
               ...p,
-              flags: copiedFlags,
+              flags: [...p.flags, ...newFlags],
               updatedAt: new Date(),
             };
           }),

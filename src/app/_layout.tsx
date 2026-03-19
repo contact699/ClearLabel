@@ -24,8 +24,6 @@ const queryClient = new QueryClient();
 function RootLayoutNav({ colorScheme }: { colorScheme: 'light' | 'dark' | null | undefined }) {
   const initialize = useSubscriptionStore((s) => s.initialize);
   const checkAndUpdateStreak = useStreakStore((s) => s.checkAndUpdateStreak);
-  const currentStreak = useStreakStore((s) => s.currentStreak);
-  const scannedToday = useStreakStore((s) => s.scannedToday);
 
   useEffect(() => {
     // Initialize RevenueCat and hide splash screen
@@ -76,6 +74,8 @@ function RootLayoutNav({ colorScheme }: { colorScheme: 'light' | 'dark' | null |
         <Stack.Screen name="shopping-list" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="insights" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="encyclopedia" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="family-profile" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="help" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
       </Stack>

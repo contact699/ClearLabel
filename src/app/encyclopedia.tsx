@@ -113,7 +113,7 @@ function IngredientDetail({ ingredient, ingredientKey, onClose }: IngredientDeta
           colors={categoryConfig.gradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          className="pt-4 pb-6"
+          style={{ paddingTop: 16, paddingBottom: 24 }}
         >
           <SafeAreaView edges={['top']}>
             <View className="flex-row items-center justify-between px-6 pt-2">
@@ -220,7 +220,7 @@ function IngredientDetail({ ingredient, ingredientKey, onClose }: IngredientDeta
                 <Text className="text-lg font-bold text-slate-900 ml-3">Who Should Avoid</Text>
               </View>
               {ingredient.whoShouldAvoid.map((item, index) => (
-                <View key={index} className="flex-row items-start mb-2 last:mb-0">
+                <View key={index} className={cn("flex-row items-start", index < ingredient.whoShouldAvoid.length - 1 && "mb-2")}>
                   <View className="w-2 h-2 rounded-full bg-red-400 mt-2 mr-3" />
                   <Text className="text-slate-700 flex-1">{item}</Text>
                 </View>
@@ -381,7 +381,7 @@ export default function EncyclopediaScreen() {
         colors={['#0D9488', '#0F766E']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        className="pt-12 pb-4"
+        style={{ paddingTop: 48, paddingBottom: 16 }}
       >
         <SafeAreaView edges={['top']}>
           <View className="flex-row items-center justify-between px-6 pt-2">

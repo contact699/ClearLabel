@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, Alert, Share, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Alert, Share, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -513,8 +513,8 @@ export default function FamilyProfileScreen() {
       </SafeAreaView>
 
       {/* Custom Flag Modal */}
-      {showCustomFlagModal && (
-        <View className="absolute inset-0 bg-black/50 items-center justify-center px-6">
+      <Modal visible={showCustomFlagModal} transparent animationType="fade" onRequestClose={() => setShowCustomFlagModal(false)}>
+        <View className="flex-1 bg-black/50 items-center justify-center px-6">
           <View className="bg-white rounded-3xl p-6 w-full">
             <View className="flex-row items-center justify-between mb-4">
               <Text className="text-lg font-bold text-slate-900">Add Custom Flag</Text>
@@ -549,11 +549,11 @@ export default function FamilyProfileScreen() {
             </Pressable>
           </View>
         </View>
-      )}
+      </Modal>
 
       {/* Edit Profile Modal */}
-      {showEditModal && (
-        <View className="absolute inset-0 bg-black/50 items-center justify-center px-6">
+      <Modal visible={showEditModal} transparent animationType="fade" onRequestClose={() => setShowEditModal(false)}>
+        <View className="flex-1 bg-black/50 items-center justify-center px-6">
           <View className="bg-white rounded-3xl p-6 w-full max-h-[80%]">
             <View className="flex-row items-center justify-between mb-4">
               <Text className="text-lg font-bold text-slate-900">Edit Profile</Text>
@@ -670,7 +670,7 @@ export default function FamilyProfileScreen() {
             </Pressable>
           </View>
         </View>
-      )}
+      </Modal>
     </View>
   );
 }

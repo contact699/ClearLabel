@@ -193,7 +193,9 @@ export function getNutritionData(product: OFFProduct): NutritionData | undefined
     salt: nutriments.salt_100g ?? (nutriments.sodium_100g ? nutriments.sodium_100g * 2.5 : undefined),
     fiber: nutriments.fiber_100g,
     protein: nutriments.proteins_100g,
-    calories: nutriments['energy-kcal_100g'] ?? (nutriments.energy_100g ? nutriments.energy_100g / 4.184 : undefined),
+    calories: nutriments['energy-kcal_100g'] ?? (nutriments.energy_100g
+      ? (nutriments.energy_unit === 'kcal' ? nutriments.energy_100g : nutriments.energy_100g / 4.184)
+      : undefined),
   };
 }
 

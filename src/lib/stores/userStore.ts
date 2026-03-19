@@ -207,6 +207,17 @@ export const useUserStore = create<UserState>()(
       name: 'ingredient-decoder-user',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({ profile: state.profile }),
+      merge: (persisted, current) => {
+        const merged = { ...current, ...(persisted as object) };
+        if (merged.profile) {
+          merged.profile = {
+            ...merged.profile,
+            createdAt: merged.profile.createdAt ? new Date(merged.profile.createdAt) : new Date(),
+            updatedAt: merged.profile.updatedAt ? new Date(merged.profile.updatedAt) : new Date(),
+          };
+        }
+        return merged as typeof current;
+      },
     }
   )
 );

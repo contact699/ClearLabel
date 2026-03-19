@@ -133,38 +133,38 @@ export const useStreakStore = create<StreakState>()(
       },
 
       checkAndUpdateStreak: () => {
-        const state = get();
         const today = getLocalDateString();
         const yesterday = getYesterdayDateString();
         const currentWeekStart = getWeekStartDateString();
 
         let freezeUsed = false;
         let streakLost = false;
-        const previousStreak = state.currentStreak;
+        const previousStreak = get().currentStreak;
 
         // Check for week rollover - only grant freeze if user has an active streak
-        if (state.weekStartDate !== currentWeekStart) {
-          set({
+        if (get().weekStartDate !== currentWeekStart) {
+          set((s) => ({
             weekStartDate: currentWeekStart,
             freezeUsedThisWeek: false,
-            streakFreezes: state.currentStreak > 0
-              ? Math.min(state.streakFreezes + 1, 2)
-              : state.streakFreezes,
-          });
+            streakFreezes: s.currentStreak > 0
+              ? Math.min(s.streakFreezes + 1, 2)
+              : s.streakFreezes,
+          }));
         }
 
         // Update scannedToday based on lastScanDate
-        const scannedToday = state.lastScanDate === today;
-        if (state.scannedToday !== scannedToday) {
+        const scannedToday = get().lastScanDate === today;
+        if (get().scannedToday !== scannedToday) {
           set({ scannedToday });
         }
 
         // If scanned today or yesterday, streak is fine
-        if (state.lastScanDate === today || state.lastScanDate === yesterday) {
+        if (get().lastScanDate === today || get().lastScanDate === yesterday) {
           return { freezeUsed: false, streakLost: false, previousStreak };
         }
 
         // If lastScanDate is older than yesterday and we have a streak
+        const state = get();
         if (state.lastScanDate !== null && state.currentStreak > 0) {
           // Calculate how many days were missed
           const lastScan = new Date(state.lastScanDate + 'T00:00:00');
@@ -230,7 +230,6 @@ export const useStreakStore = create<StreakState>()(
         freezeUsedThisWeek: state.freezeUsedThisWeek,
         weekStartDate: state.weekStartDate,
         milestones: state.milestones,
-        scannedToday: state.scannedToday,
       }),
     }
   )

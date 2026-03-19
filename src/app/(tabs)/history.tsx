@@ -104,9 +104,11 @@ export default function HistoryScreen() {
   const removeProduct = useHistoryStore((s) => s.removeProduct);
   const searchProducts = useHistoryStore((s) => s.searchProducts);
   const addToCompare = useCompareStore((s) => s.addToCompare);
-  const isInCompare = useCompareStore((s) => s.isInCompare);
-  const canCompare = useCompareStore((s) => s.canCompare);
-  const compareCount = useCompareStore((s) => s.getCompareCount);
+  const productAId = useCompareStore((s) => s.productA?.id ?? null);
+  const productBId = useCompareStore((s) => s.productB?.id ?? null);
+  const isInCompare = (productId: string) => productAId === productId || productBId === productId;
+  const canCompare = productAId !== null && productBId !== null;
+  const compareCount = (productAId ? 1 : 0) + (productBId ? 1 : 0);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all');
@@ -187,7 +189,7 @@ export default function HistoryScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
 
-    if (canCompare()) {
+    if (canCompare) {
       router.push('/compare');
     }
   }, [addToCompare, canCompare, router]);
@@ -489,7 +491,7 @@ export default function HistoryScreen() {
         )}
 
         {/* Floating Compare Button */}
-        {compareCount() > 0 && (
+        {compareCount > 0 && (
           <Animated.View
             entering={FadeInDown.springify()}
             className="absolute bottom-6 left-6 right-6"
@@ -513,7 +515,7 @@ export default function HistoryScreen() {
               >
                 <Scale size={20} color="#FFFFFF" />
                 <Text className="text-white font-bold text-base ml-2">
-                  Compare {compareCount()} Product{compareCount() > 1 ? 's' : ''}
+                  Compare {compareCount} Product{compareCount > 1 ? 's' : ''}
                 </Text>
               </LinearGradient>
             </Pressable>

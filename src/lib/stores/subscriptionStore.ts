@@ -57,15 +57,15 @@ export const useSubscriptionStore = create<SubscriptionState>()(
 
       initialize: async () => {
         if (get().isInitialized) return;
-        
-        set({ isLoading: true });
+
+        set({ isInitialized: true, isLoading: true });
         try {
           await initializePurchases();
           await get().refreshSubscriptionStatus();
           await get().loadOfferings();
-          set({ isInitialized: true });
         } catch (error) {
           console.error('Failed to initialize subscriptions:', error);
+          set({ isInitialized: false });
         } finally {
           set({ isLoading: false });
         }

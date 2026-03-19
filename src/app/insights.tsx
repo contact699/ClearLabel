@@ -34,6 +34,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { useHistoryStore } from '@/lib/stores';
 import { COLORS } from '@/lib/constants';
+import { cn } from '@/lib/cn';
 import type { ScannedProduct, SafetyStatus } from '@/lib/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -348,7 +349,7 @@ export default function InsightsScreen() {
         colors={['#0D9488', '#0F766E']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        className="pt-12 pb-6"
+        style={{ paddingTop: 48, paddingBottom: 24 }}
       >
         <SafeAreaView edges={['top']}>
           <View className="flex-row items-center justify-between px-6 pt-2">
@@ -612,7 +613,7 @@ export default function InsightsScreen() {
                 </View>
                 
                 {stats.suggestions.map((suggestion, index) => (
-                  <View key={index} className="flex-row items-start mb-3 last:mb-0">
+                  <View key={index} className={cn("flex-row items-start", index < stats.suggestions.length - 1 && "mb-3")}>
                     <View className="w-6 h-6 rounded-full bg-teal-100 items-center justify-center mt-0.5">
                       <Zap size={14} color={COLORS.brandGreen} />
                     </View>

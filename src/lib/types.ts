@@ -193,6 +193,7 @@ export interface OFFProduct {
     proteins_100g?: number;
     energy_100g?: number;
     'energy-kcal_100g'?: number;
+    energy_unit?: string;
   };
 }
 

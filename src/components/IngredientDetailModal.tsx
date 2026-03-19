@@ -155,7 +155,7 @@ export function IngredientDetailModal({ visible, onClose, ingredientName, flagRe
                 <AlertTriangle size={32} color={COLORS.cautionYellow} />
               </View>
               <Text className="text-xl font-bold text-slate-900 text-center">{ingredientName}</Text>
-              <Text className="text-slate-500 text-center mt-2">Flagged for: {flagReasons.join(', ')}</Text>
+              <Text className="text-slate-500 text-center mt-2">{flagReasons.length > 0 ? `Flagged for: ${flagReasons.join(', ')}` : 'Flagged ingredient'}</Text>
               <Text className="text-slate-400 text-center mt-4 text-sm">
                 Detailed information for this specific ingredient is not available yet.
               </Text>

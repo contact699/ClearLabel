@@ -15,6 +15,7 @@ Notifications.setNotificationHandler({
 
 const STREAK_REMINDER_ID = 'streak-reminder';
 const WEEKLY_DIGEST_ID = 'weekly-digest';
+const DAILY_REMINDER_ID = 'daily-reminder';
 const PERMISSION_ASKED_KEY = 'notification-permission-asked';
 
 export async function requestNotificationPermissions(): Promise<boolean> {
@@ -147,6 +148,31 @@ export async function scheduleWeeklyDigest(
     },
     identifier: WEEKLY_DIGEST_ID,
   });
+}
+
+export async function scheduleDailyReminderNotification(hour: number, minute: number): Promise<void> {
+  await Notifications.cancelScheduledNotificationAsync(DAILY_REMINDER_ID);
+
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status !== 'granted') return;
+
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Time to scan!',
+      body: "Check what's in your products today",
+      sound: true,
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+    },
+    identifier: DAILY_REMINDER_ID,
+  });
+}
+
+export async function cancelDailyReminder(): Promise<void> {
+  await Notifications.cancelScheduledNotificationAsync(DAILY_REMINDER_ID);
 }
 
 export async function cancelAllNotifications(): Promise<void> {

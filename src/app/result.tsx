@@ -216,9 +216,11 @@ export default function ResultScreen() {
   const product = id ? products.find((p) => p.id === id) : undefined;
   const userFlags = useUserStore((s) => s.profile?.flags ?? []);
   const addToCompare = useCompareStore((s) => s.addToCompare);
-  const isInCompare = useCompareStore((s) => s.isInCompare);
-  const canCompare = useCompareStore((s) => s.canCompare);
-  const compareCount = useCompareStore((s) => s.getCompareCount);
+  const productAId = useCompareStore((s) => s.productA?.id ?? null);
+  const productBId = useCompareStore((s) => s.productB?.id ?? null);
+  const isInCompare = (productId: string) => productAId === productId || productBId === productId;
+  const canCompare = productAId !== null && productBId !== null;
+  const compareCount = (productAId ? 1 : 0) + (productBId ? 1 : 0);
 
   const isProductInCompare = product ? isInCompare(product.id) : false;
 
@@ -437,7 +439,7 @@ export default function ResultScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
 
-    if (canCompare()) {
+    if (canCompare) {
       router.push('/compare');
     }
   };

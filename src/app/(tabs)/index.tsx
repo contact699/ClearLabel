@@ -108,7 +108,8 @@ export default function HomeScreen() {
   const shoppingLists = useShoppingListStore((s) => s.lists);
   const activeListId = useShoppingListStore((s) => s.activeListId);
   const activeList = shoppingLists.find((l) => l.id === activeListId) || shoppingLists[0];
-  const uncheckedCount = activeList ? useShoppingListStore.getState().getUncheckedCount(activeList.id) : 0;
+  const shoppingListItems = useShoppingListStore((s) => activeList ? s.lists.find((l) => l.id === activeList.id)?.items ?? [] : []);
+  const uncheckedCount = shoppingListItems.filter((item) => !item.checkedAt).length;
 
   // Streak check on mount
   const checkAndUpdateStreak = useStreakStore((s) => s.checkAndUpdateStreak);

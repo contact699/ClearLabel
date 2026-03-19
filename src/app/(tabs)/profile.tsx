@@ -37,6 +37,7 @@ import {
 import Animated, { FadeInDown, FadeIn, SlideInRight } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
+import { cancelDailyReminder, scheduleDailyReminderNotification, cancelAllNotifications } from '@/lib/services/notifications';
 import { useUserStore, useSubscriptionStore, useHistoryStore, useFamilyProfilesStore, getSuggestedProfileColor, PROFILE_EMOJIS, RELATIONSHIP_EMOJIS, useStreakStore } from '@/lib/stores';
 import { AchievementsSection } from '@/components/AchievementsSection';
 import { COLORS } from '@/lib/constants';
@@ -345,7 +346,7 @@ export default function ProfileScreen() {
     Haptics.selectionAsync();
 
     if (!enabled) {
-      await Notifications.cancelAllScheduledNotificationsAsync();
+      await cancelAllNotifications();
     }
   };
 
@@ -362,28 +363,16 @@ export default function ProfileScreen() {
     Haptics.selectionAsync();
 
     if (dailyReminder) {
-      await scheduleDailyReminder(notificationPrefs.dailyReminderTime);
+      const [hours, minutes] = notificationPrefs.dailyReminderTime.split(':').map(Number);
+      await scheduleDailyReminderNotification(hours, minutes);
     } else {
-      await Notifications.cancelAllScheduledNotificationsAsync();
+      await cancelDailyReminder();
     }
   };
 
   const scheduleDailyReminder = async (time: string) => {
-    await Notifications.cancelAllScheduledNotificationsAsync();
     const [hours, minutes] = time.split(':').map(Number);
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Time to scan!',
-        body: 'Check what\'s in your products today',
-        sound: true,
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: hours,
-        minute: minutes,
-      },
-    });
+    await scheduleDailyReminderNotification(hours, minutes);
   };
 
   const handleTimeChange = (time: string) => {

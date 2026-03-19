@@ -50,6 +50,13 @@ export async function initializePurchases(): Promise<void> {
 }
 
 /**
+ * Reset initialization state (call on logout)
+ */
+export function resetPurchases(): void {
+  isInitialized = false;
+}
+
+/**
  * Get current customer info including active subscriptions
  */
 export async function getCustomerInfo(): Promise<CustomerInfo | null> {

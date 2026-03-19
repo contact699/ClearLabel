@@ -205,12 +205,16 @@ function SuccessOverlay({ visible, onComplete }: { visible: boolean; onComplete:
       scale.value = withSpring(1, { damping: 12 });
       opacity.value = withTiming(1, { duration: 200 });
 
+      let innerTimeout: ReturnType<typeof setTimeout>;
       const timeout = setTimeout(() => {
         opacity.value = withTiming(0, { duration: 300 });
-        setTimeout(onComplete, 300);
+        innerTimeout = setTimeout(onComplete, 300);
       }, 800);
 
-      return () => clearTimeout(timeout);
+      return () => {
+        clearTimeout(timeout);
+        clearTimeout(innerTimeout);
+      };
     } else {
       scale.value = 0;
       opacity.value = 0;
