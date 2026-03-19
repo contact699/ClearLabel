@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, Pressable, ActivityIndicator, TextInput, Modal, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
@@ -255,6 +256,7 @@ function SuccessOverlay({ visible, onComplete }: { visible: boolean; onComplete:
 
 export default function ScanScreen() {
   const router = useRouter();
+  const isFocused = useIsFocused();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [torch, setTorch] = useState(false);
@@ -631,6 +633,8 @@ export default function ScanScreen() {
         ref={cameraRef}
         style={{ flex: 1 }}
         facing="back"
+        active={isFocused}
+        autofocus="on"
         enableTorch={torch}
         barcodeScannerSettings={scanMode === 'barcode' ? {
           barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'code93', 'qr'],
