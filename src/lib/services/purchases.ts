@@ -12,12 +12,13 @@ const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ||
 const REVENUECAT_ANDROID_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY || '';
 
 // Entitlement identifier from RevenueCat
-const PRO_ENTITLEMENT_ID = 'pro';
+const PRO_ENTITLEMENT_ID = 'ClearLabel Pro';
 
 // Product identifiers (must match App Store Connect / Google Play Console)
 export const PRODUCT_IDS = {
-  monthlyPro: 'clearlabel_pro_monthly',
-  annualPro: 'clearlabel_pro_annual',
+  monthlyPro: 'monthly',
+  annualPro: 'yearly',
+  lifetime: 'lifetime',
 } as const;
 
 let isInitialized = false;

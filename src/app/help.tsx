@@ -15,23 +15,17 @@ import {
   FileText,
   Shield,
   ExternalLink,
-  Smartphone,
   HelpCircle,
-  Zap,
-  Users,
   Scan,
-  AlertTriangle,
-  CreditCard,
   RefreshCw,
-  Heart,
   Share2,
   Copy,
-  CheckCircle,
 } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
+import { MONETIZATION_ENABLED } from '@/lib/monetization';
 
 interface FAQItem {
   id: string;
@@ -40,7 +34,7 @@ interface FAQItem {
   category: string;
 }
 
-const FAQ_DATA: FAQItem[] = [
+const GETTING_STARTED_FAQS: FAQItem[] = [
   // Getting Started
   {
     id: '1',
@@ -60,6 +54,9 @@ const FAQ_DATA: FAQItem[] = [
     question: 'How do I set up family profiles?',
     answer: 'Go to Profile → Family Profiles → Add. Create a profile for each family member with their specific dietary flags.\n\nFor example, Dad might avoid fish while your son avoids peanuts. Tap any profile to manage their specific flags.\n\nYou can also share profiles with family members using share codes so everyone stays synced.',
   },
+];
+
+const SCANNING_FAQS: FAQItem[] = [
   // Scanning Issues
   {
     id: '4',
@@ -79,6 +76,9 @@ const FAQ_DATA: FAQItem[] = [
     question: 'Why is the ingredients scan not working well?',
     answer: 'For best results with ingredient label scanning:\n\n• Ensure good, even lighting (no shadows)\n• Hold the camera parallel to the label\n• Make sure all text is in focus\n• Include only the ingredients section, not the whole package\n• Flatten curved labels if possible\n\nThe AI works best with clear, high-contrast text.',
   },
+];
+
+const SUBSCRIPTION_BILLING_FAQS: FAQItem[] = [
   // Subscription & Billing
   {
     id: '7',
@@ -104,6 +104,9 @@ const FAQ_DATA: FAQItem[] = [
     question: 'Can I get a refund?',
     answer: 'Refunds are handled by Apple (iOS) or Google (Android):\n\n**iOS:** reportaproblem.apple.com\n**Android:** Play Store → Account → Order history\n\nRefunds are typically granted within 48 hours of purchase or for technical issues.',
   },
+];
+
+const FEATURE_FAQS: FAQItem[] = [
   // Features
   {
     id: '11',
@@ -129,6 +132,9 @@ const FAQ_DATA: FAQItem[] = [
     question: 'How do I share a shopping list?',
     answer: 'Go to History tab → Shopping List icon.\n\n1. Create or select a list\n2. Tap "Share" to generate a share code\n3. Send the code to family members\n4. They enter the code to join your list\n\nEveryone can add items and check them off in real-time!',
   },
+];
+
+const DATA_PRIVACY_FAQS: FAQItem[] = [
   // Data & Privacy
   {
     id: '15',
@@ -150,7 +156,17 @@ const FAQ_DATA: FAQItem[] = [
   },
 ];
 
-const CATEGORIES = ['Getting Started', 'Scanning Issues', 'Subscription & Billing', 'Features', 'Data & Privacy'];
+const FAQ_DATA: FAQItem[] = [
+  ...GETTING_STARTED_FAQS,
+  ...SCANNING_FAQS,
+  ...(MONETIZATION_ENABLED ? SUBSCRIPTION_BILLING_FAQS : []),
+  ...FEATURE_FAQS.filter((faq) => MONETIZATION_ENABLED || faq.id !== '11'),
+  ...DATA_PRIVACY_FAQS,
+];
+
+const CATEGORIES = MONETIZATION_ENABLED
+  ? ['Getting Started', 'Scanning Issues', 'Subscription & Billing', 'Features', 'Data & Privacy']
+  : ['Getting Started', 'Scanning Issues', 'Features', 'Data & Privacy'];
 
 export default function HelpScreen() {
   const router = useRouter();

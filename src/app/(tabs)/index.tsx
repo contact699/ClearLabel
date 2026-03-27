@@ -25,6 +25,7 @@ import type { ScannedProduct, SafetyStatus } from '@/lib/types';
 import { StreakCard } from '@/components/StreakCard';
 import { MilestoneModal } from '@/components/MilestoneModal';
 
+const EMPTY_ARRAY: never[] = [];
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH * 0.38;
 
@@ -108,7 +109,7 @@ export default function HomeScreen() {
   const shoppingLists = useShoppingListStore((s) => s.lists);
   const activeListId = useShoppingListStore((s) => s.activeListId);
   const activeList = shoppingLists.find((l) => l.id === activeListId) || shoppingLists[0];
-  const shoppingListItems = useShoppingListStore((s) => activeList ? s.lists.find((l) => l.id === activeList.id)?.items ?? [] : []);
+  const shoppingListItems = activeList ? activeList.items : EMPTY_ARRAY;
   const uncheckedCount = shoppingListItems.filter((item) => !item.checkedAt).length;
 
   // Streak check on mount

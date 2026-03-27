@@ -64,6 +64,7 @@ import { IngredientDetailModal } from '@/components/IngredientDetailModal';
 import type { ScannedProduct, DataSource, VeganStatus, VegetarianStatus } from '@/lib/types';
 import type { SafetyStatus, ProductCategory, ParsedIngredient, IngredientFlag, HealthRating } from '@/lib/types';
 
+const EMPTY_ARRAY: never[] = [];
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 function getStatusDetails(
@@ -214,7 +215,7 @@ export default function ResultScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const products = useHistoryStore((s) => s.products);
   const product = id ? products.find((p) => p.id === id) : undefined;
-  const userFlags = useUserStore((s) => s.profile?.flags ?? []);
+  const userFlags = useUserStore((s) => s.profile?.flags) ?? EMPTY_ARRAY;
   const addToCompare = useCompareStore((s) => s.addToCompare);
   const productAId = useCompareStore((s) => s.productA?.id ?? null);
   const productBId = useCompareStore((s) => s.productB?.id ?? null);

@@ -43,6 +43,7 @@ import { AchievementsSection } from '@/components/AchievementsSection';
 import { COLORS } from '@/lib/constants';
 import { PREDEFINED_FLAGS, PROFILE_COLORS, RELATIONSHIP_LABELS } from '@/lib/types';
 import { cn } from '@/lib/cn';
+import { MONETIZATION_ENABLED } from '@/lib/monetization';
 import type { FlagType, IngredientFlag, NotificationPreferences, FamilyProfile, ProfileColorId, ProfileRelationship } from '@/lib/types';
 
 const FLAG_SECTIONS: { type: FlagType; title: string; icon: React.ReactNode; color: string; bgColor: string }[] = [
@@ -104,7 +105,7 @@ export default function ProfileScreen() {
   const profile = useUserStore((s) => s.profile);
   const tier = useSubscriptionStore((s) => s.tier);
   const scansThisMonth = useSubscriptionStore((s) => s.scansThisMonth);
-  const isPro = tier === 'pro';
+  const isPro = MONETIZATION_ENABLED && tier === 'pro';
   const FREE_SCAN_LIMIT = 20;
   const remainingScans = Math.max(0, FREE_SCAN_LIMIT - scansThisMonth);
 
@@ -455,13 +456,17 @@ export default function ProfileScreen() {
                       {profile?.name || 'User'}
                     </Text>
                     <View className="flex-row items-center mt-1">
-                      {isPro ? (
-                        <View className="flex-row items-center bg-white/20 rounded-full px-3 py-1">
-                          <Crown size={14} color="#FFFFFF" />
-                          <Text className="text-white font-semibold ml-1 text-sm">Pro</Text>
-                        </View>
+                      {MONETIZATION_ENABLED ? (
+                        isPro ? (
+                          <View className="flex-row items-center bg-white/20 rounded-full px-3 py-1">
+                            <Crown size={14} color="#FFFFFF" />
+                            <Text className="text-white font-semibold ml-1 text-sm">Pro</Text>
+                          </View>
+                        ) : (
+                          <Text className="text-white/80 text-sm">Free Plan</Text>
+                        )
                       ) : (
-                        <Text className="text-white/80 text-sm">Free Plan</Text>
+                        <Text className="text-white/80 text-sm">All features included</Text>
                       )}
                     </View>
                   </View>
@@ -477,7 +482,7 @@ export default function ProfileScreen() {
           </View>
 
           {/* Upgrade Banner */}
-          {!isPro && (
+          {MONETIZATION_ENABLED && !isPro && (
             <Animated.View entering={FadeInDown.delay(120).springify()} className="px-6 mt-4">
               <Pressable
                 onPress={() => router.push('/paywall')}

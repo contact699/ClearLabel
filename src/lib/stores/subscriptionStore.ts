@@ -8,9 +8,9 @@ import {
   getOfferings, 
   purchasePackage, 
   restorePurchases,
-  isPurchasesReady,
 } from '../services/purchases';
 import type { PurchasesPackage, PurchasesOffering } from 'react-native-purchases';
+import { MONETIZATION_ENABLED } from '../monetization';
 
 export type SubscriptionTier = 'free' | 'pro';
 
@@ -58,6 +58,16 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       initialize: async () => {
         if (get().isInitialized) return;
 
+        if (!MONETIZATION_ENABLED) {
+          set({
+            tier: 'free',
+            isLoading: false,
+            offerings: null,
+            isInitialized: true,
+          });
+          return;
+        }
+
         set({ isInitialized: true, isLoading: true });
         try {
           await initializePurchases();
@@ -72,6 +82,11 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       },
 
       refreshSubscriptionStatus: async () => {
+        if (!MONETIZATION_ENABLED) {
+          set({ tier: 'free' });
+          return;
+        }
+
         try {
           const isPro = await checkProStatus();
           set({ tier: isPro ? 'pro' : 'free' });
@@ -81,6 +96,11 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       },
 
       loadOfferings: async () => {
+        if (!MONETIZATION_ENABLED) {
+          set({ offerings: null });
+          return;
+        }
+
         try {
           const offerings = await getOfferings();
           set({ offerings });
@@ -90,6 +110,10 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       },
 
       purchase: async (pkg: PurchasesPackage) => {
+        if (!MONETIZATION_ENABLED) {
+          return { success: false, error: 'Purchases are disabled' };
+        }
+
         set({ isLoading: true });
         try {
           const result = await purchasePackage(pkg);
@@ -103,6 +127,10 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       },
 
       restore: async () => {
+        if (!MONETIZATION_ENABLED) {
+          return { success: false, isPro: false, error: 'Purchases are disabled' };
+        }
+
         set({ isLoading: true });
         try {
           const result = await restorePurchases();
@@ -137,6 +165,8 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       },
 
       canScan: () => {
+        if (!MONETIZATION_ENABLED) return true;
+
         const state = get();
         if (state.tier === 'pro') return true;
         if (isNewMonth(state.lastScanReset)) return true;
@@ -144,6 +174,8 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       },
 
       getRemainingScans: () => {
+        if (!MONETIZATION_ENABLED) return Infinity;
+
         const state = get();
         if (state.tier === 'pro') return Infinity;
         if (isNewMonth(state.lastScanReset)) return FREE_SCAN_LIMIT;
@@ -151,6 +183,8 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       },
 
       isPro: () => {
+        if (!MONETIZATION_ENABLED) return false;
+
         return get().tier === 'pro';
       },
     }),

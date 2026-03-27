@@ -73,6 +73,6 @@
       },
       "anthropicApiKey": "${EXPO_PUBLIC_VIBECODE_ANTHROPIC_API_KEY}"
     },
-    "owner": "patrob316"
+    "owner": "gysb"
   }
 }

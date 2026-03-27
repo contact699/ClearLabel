@@ -21,6 +21,7 @@ import { useSubscriptionStore } from '@/lib/stores';
 import { COLORS } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 import { PACKAGE_TYPE } from 'react-native-purchases';
+import { MONETIZATION_ENABLED } from '@/lib/monetization';
 
 const FEATURES = [
   { icon: Infinity, title: 'Unlimited Scans', free: '20/month', pro: 'Unlimited' },
@@ -119,6 +120,54 @@ export default function PaywallScreen() {
   // Display prices
   const monthlyPrice = packages.find(p => p.packageType === PACKAGE_TYPE.MONTHLY)?.product.priceString || '$4.99';
   const annualPrice = packages.find(p => p.packageType === PACKAGE_TYPE.ANNUAL)?.product.priceString || '$29.99';
+  const lifetimePrice = packages.find(p => p.packageType === PACKAGE_TYPE.LIFETIME)?.product.priceString || '$79.99';
+  const hasLifetime = packages.some(p => p.packageType === PACKAGE_TYPE.LIFETIME);
+  const isLifetimeSelected = selectedPackage?.packageType === PACKAGE_TYPE.LIFETIME;
+
+  if (!MONETIZATION_ENABLED) {
+    return (
+      <View className="flex-1 bg-slate-50">
+        <LinearGradient
+          colors={['#0D9488', '#0F766E']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 320 }}
+        />
+
+        <SafeAreaView className="flex-1">
+          <View className="flex-row items-center justify-between px-5 py-4">
+            <Pressable
+              onPress={() => router.back()}
+              className="w-10 h-10 rounded-full bg-white/20 items-center justify-center"
+            >
+              <X size={24} color="#FFFFFF" />
+            </Pressable>
+            <View className="w-10 h-10" />
+          </View>
+
+          <View className="flex-1 justify-center px-6 pb-12">
+            <View className="bg-white rounded-3xl p-6 border border-slate-100">
+              <View className="w-16 h-16 rounded-full bg-teal-50 items-center justify-center self-center mb-4">
+                <Check size={28} color={COLORS.brandGreen} />
+              </View>
+              <Text className="text-2xl font-bold text-slate-900 text-center">
+                All features included
+              </Text>
+              <Text className="text-slate-600 text-center mt-3 leading-6">
+                Everything in this build is already available. You can keep scanning and using ClearLabel normally.
+              </Text>
+              <Pressable
+                onPress={() => router.back()}
+                className="mt-6 bg-teal-600 rounded-2xl py-4 items-center justify-center active:bg-teal-700"
+              >
+                <Text className="text-white font-bold text-base">Back to ClearLabel</Text>
+              </Pressable>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-slate-50">
@@ -190,7 +239,7 @@ export default function PaywallScreen() {
                 }}
                 className={cn(
                   'flex-1 rounded-2xl p-4 border-2',
-                  (selectedPackage?.packageType === PACKAGE_TYPE.ANNUAL || !selectedPackage)
+                  (selectedPackage?.packageType === PACKAGE_TYPE.ANNUAL || (!selectedPackage && !isLifetimeSelected))
                     ? 'bg-white border-teal-500'
                     : 'bg-white/90 border-transparent'
                 )}
@@ -207,6 +256,37 @@ export default function PaywallScreen() {
                 <Text className="text-slate-500 text-xs text-center">per year</Text>
               </Pressable>
             </View>
+
+            {/* Lifetime Option */}
+            {hasLifetime && (
+              <Pressable
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  const pkg = packages.find(p => p.packageType === PACKAGE_TYPE.LIFETIME);
+                  setSelectedPackageId(pkg?.identifier || 'lifetime');
+                }}
+                className={cn(
+                  'mt-3 rounded-2xl p-4 border-2 flex-row items-center justify-between',
+                  isLifetimeSelected
+                    ? 'bg-white border-teal-500'
+                    : 'bg-white/90 border-transparent'
+                )}
+              >
+                <View className="flex-row items-center">
+                  <View className="w-10 h-10 rounded-full bg-amber-100 items-center justify-center mr-3">
+                    <Crown size={20} color="#D97706" />
+                  </View>
+                  <View>
+                    <Text className="font-bold text-slate-900 text-base">Lifetime</Text>
+                    <Text className="text-slate-500 text-xs">Pay once, own it forever</Text>
+                  </View>
+                </View>
+                <View className="items-end">
+                  <Text className="text-xl font-bold text-slate-900">{lifetimePrice}</Text>
+                  <Text className="text-teal-600 text-xs font-semibold">Best value</Text>
+                </View>
+              </Pressable>
+            )}
           </Animated.View>
 
           {/* Features Comparison */}
@@ -277,14 +357,14 @@ export default function PaywallScreen() {
                 <>
                   <Zap size={20} color="#FFFFFF" />
                   <Text className="text-white font-bold text-lg ml-2">
-                    Start Pro — {selectedPackage?.product.priceString || (selectedPackageId === 'annual' ? annualPrice : monthlyPrice)}
+                    {isLifetimeSelected ? 'Get Lifetime Pro' : 'Start Pro'} — {selectedPackage?.product.priceString || (selectedPackageId === 'annual' ? annualPrice : monthlyPrice)}
                   </Text>
                 </>
               )}
             </Pressable>
 
             <Text className="text-slate-400 text-center text-xs mt-3">
-              Cancel anytime • Subscription auto-renews
+              {isLifetimeSelected ? 'One-time purchase • No subscription' : 'Cancel anytime • Subscription auto-renews'}
             </Text>
 
             <Text className="text-slate-400 text-center text-xs mt-2">
